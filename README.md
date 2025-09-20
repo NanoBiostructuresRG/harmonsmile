@@ -9,6 +9,7 @@
 
 ## Description
 **HARMONSMILE** is a toolkit for aligns SMILES to the RDKit convention (canonical + isomeric + keculized).
+
 ---
 
 ## Purpose
