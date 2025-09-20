@@ -88,7 +88,7 @@ The following files will be saved under the `results/` directory:
 ## Notes
 
 - The PubChem dataset should contain two columns: id, PubChem CID
-- The COCONUT dataser should contain two columns: id, SMILES
+- The COCONUT dataset should contain two columns: id, SMILES
 ---
 
 ## Future Extensions
