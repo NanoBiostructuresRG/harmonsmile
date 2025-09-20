@@ -13,7 +13,7 @@
 ---
 
 ## Purpose
-The primary objective of HARMOSMILE is to automate the preparation of SMILES for cheminformatics workflows and **phase 1** machine learning applications within the computational drug discovery pipeline. The platform enables:
+The primary objective of HARMONSMILE is to automate the preparation of SMILES for cheminformatics workflows and **phase 1** machine learning applications within the computational drug discovery pipeline. The platform enables:
 - **Standardized SMILES** for comparing several versions.
 - **Facilitate reproducibility** in academic and industrial experiments.
 
@@ -21,7 +21,7 @@ The primary objective of HARMOSMILE is to automate the preparation of SMILES for
 
 ## Project Structure
 ```text
-HARMOSMILE/Phase 1
+HARMONSMILE/Phase 1
 │
 ├── cli/
 │   ├── harmonize.py
