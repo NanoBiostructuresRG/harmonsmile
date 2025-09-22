@@ -8,7 +8,7 @@
 ---
 
 ## Description
-**HARMONSMILE** is a toolkit for aligns SMILES to the RDKit convention (canonical + isomeric + keculized).
+**HARMONSMILE** is a toolkit for aligns SMILES to the convention: canonical + isomeric + keculized (e.g., RDKit, COCONUT 2.0).
 
 ---
 
@@ -30,7 +30,8 @@ HARMONSMILE/Phase 1
 │
 ├── data/
 │   ├── database1.csv                   # Database1 Pubchem
-│   └── database2.csv                   # Database2 COCONUT
+│   ├── database2.csv                   # Database1 COCONUT
+│   └── database3.csv                   # Database2 Independent
 │
 ├── harmonsmile/                        
 │   ├── __init__.py
@@ -43,7 +44,8 @@ HARMONSMILE/Phase 1
 ├── logs/                            
 ├── results/                     
 │   ├── database1_homosmiles.csv
-│   └── database2_homosmiles.csv 
+│   ├── database2_homosmiles.csv
+│   └── database3_homosmiles.csv 
 │   
 └── README.md                           
 ```
@@ -58,9 +60,12 @@ From the project root directory, run the following command:
 python -m harmonsmile --pubchem-in data/database1.csv --pubchem-out results/database_homosmiles.csv
 
 # Only database2
-python -m harmonsmile --coconut-in data/database2.csv --coconut-smiles SMILES --coconut-out results/databse2_homosmiles.csv
+python -m harmonsmile --coconut-in data/database2.csv --coconut-smiles SMILES --coconut-out results/database2_homosmiles.csv
 
-# Both 1&2
+# Only database3
+python -m harmonsmile --coconut-in data/database3.csv --coconut-smiles SMILES --coconut-out results/database3_homosmiles.csv
+
+# All 1&2&3
 python -m harmonsmile first \ second
 
 ```
