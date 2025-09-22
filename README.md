@@ -30,8 +30,8 @@ HARMONSMILE/Phase 1
 │
 ├── data/
 │   ├── database1.csv                   # Database1 Pubchem
-│   ├── database2.csv                   # Database1 COCONUT
-│   └── database3.csv                   # Database2 Independent
+│   ├── database2.csv                   # Database2 COCONUT
+│   └── database3.csv                   # Database3 Independent
 │
 ├── harmonsmile/                        
 │   ├── __init__.py
@@ -77,7 +77,8 @@ python -m harmonsmile first \ second
 The following files will be saved under the `results/` directory:
 
 - `database1_homosmiles.csv`
-- `database2_homosmiles.csv`  
+- `database2_homosmiles.csv`
+- `database3_homosmiles.csv`  
 
 ---
 
@@ -93,7 +94,8 @@ The following files will be saved under the `results/` directory:
 ## Notes
 
 - The PubChem dataset should contain two columns: id, PubChem CID
-- The COCONUT dataset should contain two columns: id, SMILES
+- The COCONUT dataset should contain at least two columns: id, SMILES
+- The Independent dataset should contain at least two columns: id, SMILES
 ---
 
 ## Future Extensions
