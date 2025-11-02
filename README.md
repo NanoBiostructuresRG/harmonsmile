@@ -63,7 +63,7 @@ python -m harmonsmile --pubchem-in data/database1.csv --pubchem-out results/data
 python -m harmonsmile --coconut-in data/database2.csv --coconut-smiles SMILES --coconut-out results/database2_homosmiles.csv
 
 # Only database3
-python -m harmonsmile --coconut-in data/database3.csv --coconut-smiles SMILES --coconut-out results/database3_homosmiles.csv
+python -m harmonsmile --coconut-in data/database3.csv --coconut-smiles SMILES_PubChem --coconut-out results/database3_homosmiles.csv
 
 # All 1&2&3
 python -m harmonsmile first \ second
