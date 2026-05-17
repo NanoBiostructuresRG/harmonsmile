@@ -1,117 +1,152 @@
 # HARMONSMILE: Harmonize SMILES
+
 **Version 1.0.0 – September, 2025. Monterrey**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-[![Version](https://img.shields.io/badge/version-v1.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-v1.0.0-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
+[![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 
 ---
 
 ## Description
-**HARMONSMILE** is a toolkit for aligns SMILES to the convention: canonical + isomeric + keculized (e.g., RDKit, COCONUT 2.0).
+
+**HARMONSMILE** is a toolkit for aligning SMILES strings to a consistent convention:
+canonical + isomeric + Kekulized (as used by RDKit and COCONUT 2.0).
+
+---
+
+## Installation
+
+```bash
+pip install harmonsmile
+```
+
+> **Note:** RDKit is required. It is installed automatically via PyPI (`rdkit>=2022.09`).
 
 ---
 
 ## Purpose
-The primary objective of HARMONSMILE is to automate the preparation of SMILES for cheminformatics workflows and **phase 1** machine learning applications within the computational drug discovery pipeline. The platform enables:
-- **Standardized SMILES** for comparing several versions.
-- **Facilitate reproducibility** in academic and industrial experiments.
+
+The primary objective of HARMONSMILE is to automate the preparation of SMILES for
+cheminformatics workflows and **phase 1** machine learning applications within the
+computational drug discovery pipeline. The platform enables:
+
+- **Standardized SMILES** for comparing data from multiple sources.
+- **Reproducibility** in academic and industrial experiments.
+
+---
+
+## Quick Start (Python API)
+
+```python
+from harmonsmile import RDKitStandardizer
+
+std = RDKitStandardizer()
+print(std.to_iso_kek("c1ccccc1"))        # canonical + isomeric + Kekulized
+print(std.to_conn_kek("c1ccccc1"))       # canonical + connectivity-only + Kekulized
+```
+
+```python
+from harmonsmile import CoconutPrep
+
+CoconutPrep(
+    input_path="data/database_coconut.csv",
+    smiles_col="SMILES",
+    output_path="results/coconut_harmonized.csv",
+).run()
+```
+
+```python
+from harmonsmile import PubChemIngest, Config
+
+cfg = Config(
+    input_path="data/database_pubchem.csv",
+    output_path="results/pubchem_harmonized.csv",
+)
+PubChemIngest(cfg).run()
+```
+
+---
+
+## Command-Line Interface
+
+```bash
+# PubChem database
+harmonsmile --pubchem-in data/database1.csv --pubchem-out results/database1_homosmiles.csv
+
+# COCONUT / independent database
+harmonsmile --coconut-in data/database2.csv --coconut-smiles SMILES --coconut-out results/database2_homosmiles.csv
+
+# Both in one run
+harmonsmile \
+  --pubchem-in data/database1.csv --pubchem-out results/database1_homosmiles.csv \
+  --coconut-in data/database2.csv --coconut-smiles SMILES --coconut-out results/database2_homosmiles.csv
+```
+
+Also available as a module:
+
+```bash
+python -m harmonsmile --pubchem-in data/database1.csv --pubchem-out results/out.csv
+```
 
 ---
 
 ## Project Structure
+
 ```text
-HARMONSMILE/Phase 1
-│
-├── cli/
-│   ├── harmonize.py
-│   ├── ingest_pubchem.py                      
-│   └── prep_coconut.py    
-│
-├── data/
-│   ├── database1.csv                   # Database1 Pubchem
-│   ├── database2.csv                   # Database2 COCONUT
-│   └── database3.csv                   # Database3 Independent
-│
-├── harmonsmile/                        
-│   ├── __init__.py
-│   ├── __main__.py
-│   ├── config.py
-│   ├── io.py
-│   ├── pipelines.py
-│   ├── pubchem.py
-│   └── standardize.py        
-├── logs/                            
-├── results/                     
-│   ├── database1_homosmiles.csv
-│   ├── database2_homosmiles.csv
-│   └── database3_homosmiles.csv 
-│   
-└── README.md                           
+HARMONSMILE/
+├── harmonsmile/
+│   ├── __init__.py        # Public API
+│   ├── __main__.py        # python -m harmonsmile entry point
+│   ├── _cli.py            # CLI implementation
+│   ├── config.py          # Config dataclass
+│   ├── io.py              # Table I/O utilities
+│   ├── pipelines.py       # PubChemIngest, CoconutPrep
+│   ├── pubchem.py         # PubChem REST client
+│   └── standardize.py     # RDKitStandardizer
+├── cli/                   # Development scripts (not installed)
+├── data/                  # Input data (not installed)
+├── results/               # Output data (not installed)
+├── logs/                  # Error logs (not installed)
+├── pyproject.toml
+└── README.md
 ```
 
 ---
 
-## How to Run
-From the project root directory, run the following command:
+## Input Format
 
-```bash
-# Only database1
-python -m harmonsmile --pubchem-in data/database1.csv --pubchem-out results/database_homosmiles.csv
-
-# Only database2
-python -m harmonsmile --coconut-in data/database2.csv --coconut-smiles SMILES --coconut-out results/database2_homosmiles.csv
-
-# Only database3
-python -m harmonsmile --coconut-in data/database3.csv --coconut-smiles SMILES_PubChem --coconut-out results/database3_homosmiles.csv
-
-# All 1&2&3
-python -m harmonsmile first \ second
-
-```
-
----
-
-## Output
-
-The following files will be saved under the `results/` directory:
-
-- `database1_homosmiles.csv`
-- `database2_homosmiles.csv`
-- `database3_homosmiles.csv`  
+| Pipeline | Required columns |
+|---|---|
+| PubChem | `id`, `PubChem CID` |
+| COCONUT / independent | `id`, `<smiles_col>` (any name) |
 
 ---
 
 ## Example Console Output
 
-```text
-[OK] results\database1_homosmiles.csv | SMILES fuente: 66/66 | RDKit: 66/66
-
+```
+[OK] results/database1_homosmiles.csv | SMILES fuente: 66/66 | RDKit: 66/66
 ```
 
 ---
 
-## Notes
-
-- The PubChem dataset should contain two columns: id, PubChem CID
-- The COCONUT dataset should contain at least two columns: id, SMILES
-- The Independent dataset should contain at least two columns: id, SMILES
----
-
 ## Future Extensions
 
-- Add more sources (e.g., ChEMBL) with the same RDKit normalization → unified SMILES_RDKit output.
-- ML-ready features: standardized pipeline to generate ECFP (with/without chirality), plus InChI/InChIKey for dedup & robust matching.
+- Additional sources (e.g., ChEMBL) with the same RDKit normalization → unified `SMILES_RDKit` output.
+- ML-ready features: standardized pipeline to generate ECFP fingerprints (with/without chirality),
+  plus InChI/InChIKey for deduplication and robust cross-database matching.
 
 ---
 
 ## Author
 
-Developed by **Flavio F. Contreras-Torres** (Tecnológico de Monterrey)  
+Developed by **Flavio F. Contreras-Torres** (Tecnológico de Monterrey)
 Monterrey, Mexico – September 2025
 
 ---
 
 ## License
-This project is licensed under the terms of the [MIT License](https://github.com/NanoBiostructuresRG/molraptor/blob/main/LICENSE).  
-See the LICENSE file for full details.
+
+This project is licensed under the terms of the [MIT License](LICENSE).

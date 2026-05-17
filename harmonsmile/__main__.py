@@ -1,4 +1,4 @@
-from cli.harmonize import main
+from harmonsmile._cli import main
 
 if __name__ == "__main__":
     main()
