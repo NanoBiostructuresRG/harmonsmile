@@ -1,15 +1,19 @@
 import os
 import pandas as pd
 
-def sanitize_cid(x):
-    if pd.isna(x): return None
+
+def sanitize_cid(x) -> str | None:
+    if pd.isna(x):
+        return None
     try:
-        if isinstance(x, float): x = int(x)
+        if isinstance(x, float):
+            x = int(x)
         s = str(x).strip()
         s = "".join(ch for ch in s if ch.isdigit())
         return s or None
     except Exception:
         return None
+
 
 def load_table(path: str) -> pd.DataFrame:
     ext = os.path.splitext(path)[1].lower()
@@ -28,6 +32,7 @@ def load_table(path: str) -> pd.DataFrame:
     if "PubChem CID" in df.columns:
         df["PubChem CID"] = df["PubChem CID"].apply(sanitize_cid)
     return df
+
 
 def save_table(df: pd.DataFrame, path: str) -> None:
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
