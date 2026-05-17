@@ -1,4 +1,4 @@
-# HARMONSMILE: Harmonize SMILES
+# HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning
 
 **Version 0.1.0 – September, 2025. Monterrey**
 

@@ -16,3 +16,9 @@ logs/*
 !data/.gitkeep
 !results/.gitkeep
 !logs/.gitkeep
+
+dist/
+*.egg-info/
+build/
+__pycache__/
+*.pyc
