@@ -1,32 +1,80 @@
+"""
+Harmonization pipelines for PubChem and COCONUT databases.
+"""
+
+from __future__ import annotations
+import logging
 import os
+
 import pandas as pd
+
+from .config import Config
 from .io import load_table, save_table
-from .standardize import RDKitStandardizer
 from .pubchem import PubChemClient
+from .standardize import RDKitStandardizer
 
-
-def log_error(msg, path="logs/errors.txt"):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(msg + "\n")
-    print("[LOG]", msg)
+logger = logging.getLogger(__name__)
 
 
 class PubChemIngest:
-    def __init__(self, cfg, client=None, std=None):
+    """
+    Pipeline for ingesting and harmonizing PubChem compound data.
+
+    Fetches properties from the PubChem REST API and appends a
+    standardized SMILES_RDKit column using RDKit canonicalization.
+
+    Parameters
+    ----------
+    cfg : Config
+        Pipeline configuration.
+    client : PubChemClient, optional
+        PubChem API client. Created automatically if not provided.
+    std : RDKitStandardizer, optional
+        SMILES standardizer. Created automatically if not provided.
+    """
+
+    def __init__(
+        self,
+        cfg: Config,
+        client: PubChemClient | None = None,
+        std: RDKitStandardizer | None = None,
+    ) -> None:
         self.cfg = cfg
-        self.client = client or PubChemClient(logger=lambda m: log_error(m, cfg.error_log))
+        self.client = client or PubChemClient(
+            logger=lambda m: logger.warning(m)
+        )
         self.std = std or RDKitStandardizer()
 
     def run(self) -> pd.DataFrame:
+        """
+        Execute the PubChem ingestion pipeline.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with original columns plus fetched properties
+            and standardized SMILES_RDKit column.
+
+        Raises
+        ------
+        ValueError
+            If the configured CID column is not found in the input file.
+        """
         df = load_table(self.cfg.input_path)
+
+        if self.cfg.cid_col not in df.columns:
+            raise ValueError(
+                f"CID column '{self.cfg.cid_col}' not found. "
+                f"Available columns: {list(df.columns)}"
+            )
+
         props = df[self.cfg.cid_col].apply(
             lambda c: self.client.fetch_props(c, list(self.cfg.props))
         )
         props_df = pd.DataFrame(list(props))
         out = pd.concat([df, props_df], axis=1)
 
-        # SMILES harmonization to COCONUT 2.0 convention (RDKit canonical+isomeric+kekulized)
+        # SMILES harmonization to COCONUT 2.0 convention
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
 
@@ -45,27 +93,65 @@ class PubChemIngest:
 
         n     = len(out)
         n_src = out["SMILES"].notna().sum() if "SMILES" in out.columns else 0
-        n_rd  = out["SMILES_RDKit"].notna().sum() if "SMILES" in out.columns else 0
-        print(f"[OK] {self.cfg.output_path} | source SMILES: {n_src}/{n} | RDKit: {n_rd}/{n}")
+        n_rd  = out["SMILES_RDKit"].notna().sum() if "SMILES_RDKit" in out.columns else 0
+        logger.info("[OK] %s | source SMILES: %s/%s | RDKit: %s/%s", self.cfg.output_path, n_src, n, n_rd, n)
         return out
 
 
 class CoconutPrep:
-    def __init__(self, input_path: str, smiles_col: str, output_path: str, std=None):
+    """
+    Pipeline for harmonizing SMILES from COCONUT or independent databases.
+
+    Reads a tabular file, applies RDKit canonicalization to the specified
+    SMILES column, and saves the result with an appended SMILES_RDKit column.
+
+    Parameters
+    ----------
+    input_path : str or os.PathLike
+        Path to the input file.
+    smiles_col : str
+        Name of the column containing SMILES strings.
+    output_path : str or os.PathLike
+        Path to the output CSV file.
+    std : RDKitStandardizer, optional
+        SMILES standardizer. Created automatically if not provided.
+    """
+
+    def __init__(
+        self,
+        input_path: str | os.PathLike,
+        smiles_col: str,
+        output_path: str | os.PathLike,
+        std: RDKitStandardizer | None = None,
+    ) -> None:
         self.input_path  = input_path
         self.smiles_col  = smiles_col
         self.output_path = output_path
         self.std         = std or RDKitStandardizer()
 
     def run(self) -> pd.DataFrame:
-        os.makedirs(os.path.dirname(self.output_path) or ".", exist_ok=True)
+        """
+        Execute the COCONUT preparation pipeline.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with original columns plus standardized SMILES_RDKit column.
+
+        Raises
+        ------
+        ValueError
+            If the specified SMILES column is not found in the input file.
+        """
+        os.makedirs(os.path.dirname(os.fspath(self.output_path)) or ".", exist_ok=True)
         df = load_table(self.input_path)
         if self.smiles_col not in df.columns:
             raise ValueError(
-                f"Column '{self.smiles_col}' not found. Available columns: {list(df.columns)}"
+                f"Column '{self.smiles_col}' not found. "
+                f"Available columns: {list(df.columns)}"
             )
         df["SMILES_RDKit"] = df[self.smiles_col].apply(self.std.to_iso_kek)
         save_table(df, self.output_path)
         n, n_ok = len(df), df["SMILES_RDKit"].notna().sum()
-        print(f"[OK] {self.output_path} | RDKit: {n_ok}/{n}")
+        logger.info("[OK] %s | RDKit: %s/%s", self.output_path, n_ok, n)
         return df

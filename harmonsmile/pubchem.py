@@ -1,22 +1,68 @@
+"""
+PubChem REST API client for harmonsmile.
+"""
+
+from __future__ import annotations
+import logging
 import time
+from typing import Any, Callable
+
 import requests
 
-class PubChemClient:
-    def __init__(self, logger=print, sleep=0.2, retries=3):
-        self.log, self.sleep, self.retries = logger, sleep, retries
 
-    def fetch_props(self, cid: str, props: list[str]) -> dict:
+class PubChemClient:
+    """
+    Client for fetching compound properties from the PubChem REST API.
+
+    Uses exponential backoff on failure and a persistent requests.Session
+    for efficient connection reuse across multiple compounds.
+
+    Parameters
+    ----------
+    logger : Callable[[str], None], optional
+        Callable for error reporting. Defaults to the module logger.
+    sleep : float, optional
+        Base sleep time in seconds between requests. Defaults to 0.2.
+    retries : int, optional
+        Number of retry attempts on failure. Defaults to 3.
+    """
+
+    def __init__(
+        self,
+        logger: Callable[[str], None] | None = None,
+        sleep: float = 0.2,
+        retries: int = 3,
+    ) -> None:
+        self.log = logger or (lambda m: logging.getLogger(__name__).warning(m))
+        self.sleep = sleep
+        self.retries = retries
+        self._session = requests.Session()
+        self._session.headers.update({"User-Agent": "harmonsmile (python-requests)"})
+
+    def fetch_props(self, cid: str, props: list[str]) -> dict[str, Any]:
+        """
+        Fetch compound properties from PubChem by CID.
+
+        Parameters
+        ----------
+        cid : str
+            PubChem Compound ID.
+        props : list of str
+            List of property names to fetch (e.g. ['SMILES', 'MolecularWeight']).
+
+        Returns
+        -------
+        dict[str, Any]
+            Dictionary mapping property names to their values.
+            Values are None if the fetch failed or CID is empty.
+        """
         if not cid:
             return {p: None for p in props}
         base = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid"
         url = f"{base}/{cid}/property/{','.join(props)}/JSON"
         for k in range(self.retries):
             try:
-                r = requests.get(
-                    url,
-                    timeout=12,
-                    headers={"User-Agent": "harmonsmile/0.1.0 (python-requests)"},
-                )
+                r = self._session.get(url, timeout=12)
                 r.raise_for_status()
                 row = r.json()["PropertyTable"]["Properties"][0]
                 time.sleep(self.sleep)
@@ -26,3 +72,7 @@ class PubChemClient:
                     self.log(f"[PubChem] CID {cid}: {e}")
                     return {p: None for p in props}
                 time.sleep(self.sleep * (2 ** k))
+        return {p: None for p in props}
+
+    def close(self) -> None:
+        self._session.close()

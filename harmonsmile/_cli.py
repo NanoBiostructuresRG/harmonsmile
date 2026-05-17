@@ -1,60 +1,79 @@
 """
 Command-line interface for harmonsmile.
 
-Usage examples:
+Usage examples
+--------------
     harmonsmile --pubchem-in data/db.csv --pubchem-out results/out.csv
     harmonsmile --coconut-in data/db.csv --coconut-smiles SMILES --coconut-out results/out.csv
     python -m harmonsmile --pubchem-in ...
 """
 
-import os
+from __future__ import annotations
 import argparse
+import os
+
 from .config import Config
 from .pipelines import PubChemIngest, CoconutPrep
 
 
-def _ensure_dirs():
+def _ensure_dirs() -> None:
     for d in ("logs", "results"):
         os.makedirs(d, exist_ok=True)
 
 
-def _parse(argv=None):
+def _parse(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="harmonsmile",
         description="Harmonize SMILES strings to canonical + isomeric + Kekulized convention.",
     )
-    # PubChem
     pub = p.add_argument_group("PubChem")
-    pub.add_argument("--pubchem-in",     dest="pub_in",         metavar="FILE")
+    pub.add_argument("--pubchem-in",     dest="pub_in",        metavar="FILE")
     pub.add_argument("--pubchem-out",    dest="pub_out",        metavar="FILE")
-    pub.add_argument("--pubchem-idcol",  dest="pubchem_idcol",  default="id",          metavar="COL")
     pub.add_argument("--pubchem-cidcol", dest="pubchem_cidcol", default="PubChem CID", metavar="COL")
-    # COCONUT / independent
+
     coco = p.add_argument_group("COCONUT / independent")
     coco.add_argument("--coconut-in",     dest="coco_in",     metavar="FILE")
     coco.add_argument("--coconut-out",    dest="coco_out",    metavar="FILE")
     coco.add_argument("--coconut-smiles", dest="coco_smiles", metavar="COL")
-    coco.add_argument("--coconut-idcol",  dest="coconut_idcol", default="id", metavar="COL")
-    return p.parse_args(argv)
+
+    args = p.parse_args(argv)
+
+    # Validate paired arguments
+    if bool(args.pub_in) != bool(args.pub_out):
+        p.error("--pubchem-in and --pubchem-out must be provided together.")
+    if bool(args.coco_in) != bool(args.coco_out):
+        p.error("--coconut-in and --coconut-out must be provided together.")
+    if args.coco_in and not args.coco_smiles:
+        p.error("--coconut-smiles is required when --coconut-in is provided.")
+
+    return args
 
 
-def main(argv=None):
-    _ensure_dirs()
-    a = _parse(argv)
+def main(argv: list[str] | None = None) -> None:
+    """
+    Entry point for the harmonsmile command-line interface.
+
+    Parameters
+    ----------
+    argv : list of str, optional
+        Argument list. Defaults to sys.argv if None.
+    """
+    args = _parse(argv)
     ran_any = False
 
-    if a.pub_in and a.pub_out:
+    if args.pub_in and args.pub_out:
+        _ensure_dirs()
         cfg = Config(
-            input_path=a.pub_in,
-            output_path=a.pub_out,
-            id_col=a.pubchem_idcol,
-            cid_col=a.pubchem_cidcol,
+            input_path=args.pub_in,
+            output_path=args.pub_out,
+            cid_col=args.pubchem_cidcol,
         )
         PubChemIngest(cfg).run()
         ran_any = True
 
-    if a.coco_in and a.coco_out and a.coco_smiles:
-        CoconutPrep(a.coco_in, a.coco_smiles, a.coco_out).run()
+    if args.coco_in and args.coco_out and args.coco_smiles:
+        _ensure_dirs()
+        CoconutPrep(args.coco_in, args.coco_smiles, args.coco_out).run()
         ran_any = True
 
     if not ran_any:
