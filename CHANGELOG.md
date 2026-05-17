@@ -20,11 +20,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PubChemIngest` pipeline: fetches properties (SMILES, MolecularWeight) from PubChem REST API
   and appends standardized `SMILES_RDKit` column.
 - `CoconutPrep` pipeline: standardizes SMILES from any CSV/Excel file using RDKit.
-- `PubChemClient` with configurable retries, exponential backoff, and pluggable logger.
-- `Config` dataclass for pipeline configuration.
-- `load_table()` and `save_table()` I/O utilities supporting CSV, TSV, XLSX, and XLS formats.
-- Command-line interface via `harmonsmile` entry point and `python -m harmonsmile`.
+- `PubChemClient` with configurable retries, exponential backoff, persistent `requests.Session`,
+  and pluggable logger.
+- `Config` frozen dataclass for pipeline configuration with `__post_init__` validation.
+- `load_table()` and `save_table()` I/O utilities supporting CSV, TSV, XLSX, and XLS formats,
+  with `PathLike` support.
+- `sanitize_cid()` utility for cleaning raw PubChem CID values.
+- Command-line interface via `harmonsmile` entry point and `python -m harmonsmile`,
+  with paired argument validation and grouped help output.
 - `pyproject.toml` for PyPI packaging (build backend: hatchling).
+- SPDX license headers (`LGPL-3.0-or-later`) in all source files.
+- NumPy-style docstrings with Examples in all public modules and classes.
+- `CITATION.cff` for software citation.
+- `CHANGELOG.md` following Keep a Changelog format.
+
+### Changed
+- License changed from MIT to GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later).
+- `__main__.py` now delegates to `harmonsmile._cli` instead of `cli.harmonize`,
+  making the package self-contained and installable from PyPI.
+- `CoconutPrep.run()` now uses `load_table()` for consistent format support across pipelines.
+- Console status messages changed to English for international audience.
+- `Config` is now immutable (`frozen=True`).
+
+### Fixed
+- Double `time.sleep()` call in `PubChemClient.fetch_props()` that caused unnecessary delays
+  on successful requests.
+- Missing column validation in `PubChemIngest.run()` before initiating network calls.
+- Incorrect guard condition for `SMILES_RDKit` counter in `PubChemIngest.run()`.
+- Unguarded `Chem.MolToSmiles()` call in `RDKitStandardizer` that could raise unhandled
+  C++ exceptions for unusual aromaticity models.
+- Fallback encoding in `load_table()` changed to `latin-1` to correctly handle
+  non-UTF-8 encoded files.
+
+### Removed
+- Redundant `cli/` scripts (`harmonize.py`, `ingest_pubchem.py`, `prep_coconut.py`)
+  superseded by the unified `harmonsmile` entry point.
+- Unused `id_col` field from `Config` dataclass.
+- Unused module-level logger in `pubchem.py`.
 
 ---
 
