@@ -27,12 +27,32 @@ save_table(df, path)
 
 Examples
 --------
+Standardize a single SMILES string:
+
 >>> from harmonsmile import RDKitStandardizer
 >>> std = RDKitStandardizer()
 >>> std.to_iso_kek("c1ccccc1")
 'C1=CC=CC=C1'
+>>> std.to_conn_kek("C[C@@H](O)F")
+'CC(O)F'
 
->>> from harmonsmile import CoconutPrep, PubChemIngest, Config
+Harmonize a COCONUT or independent database:
+
+>>> from harmonsmile import CoconutPrep
+>>> CoconutPrep(
+...     input_path="data/database.csv",
+...     smiles_col="SMILES",
+...     output_path="results/database_harmonized.csv",
+... ).run()
+
+Fetch and harmonize PubChem data:
+
+>>> from harmonsmile import PubChemIngest, Config
+>>> cfg = Config(
+...     input_path="data/database_pubchem.csv",
+...     output_path="results/pubchem_harmonized.csv",
+... )
+>>> PubChemIngest(cfg).run()
 """
 
 from .standardize import RDKitStandardizer
