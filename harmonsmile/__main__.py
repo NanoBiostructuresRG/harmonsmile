@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """
 Entry point for running harmonsmile as a module.
 
