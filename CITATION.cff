@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "HARMONSMILE: Harmonize SMILES strings"
+version: "0.1.0"
+date-released: "2025-09-19"
+authors:
+  - family-names: "Contreras-Torres"
+    given-names: "Flavio F."
+    orcid: "https://orcid.org/0000-0003-2375-131X"
+    affiliation: "Tecnologico de Monterrey"
+repository-code: "https://github.com/NanoBiostructuresRG/harmonsmile"
+license: "LGPL-3.0-or-later"
+abstract: >-
+  HARMONSMILE is a toolkit for harmonizing SMILES strings to a consistent
+  convention: canonical + isomeric + Kekulized, as used by RDKit and COCONUT 2.0.
+  It automates the preparation of SMILES for cheminformatics workflows and
+  machine learning applications within the computational drug discovery pipeline,
+  enabling standardized comparison across PubChem, COCONUT, and independent
+  molecular databases.
+keywords:
+  - cheminformatics
+  - SMILES
+  - SMILES standardization
+  - RDKit
+  - COCONUT
+  - PubChem
+  - drug discovery
+  - molecular datasets

@@ -1,9 +1,9 @@
 # HARMONSMILE: Harmonize SMILES
 
-**Version 1.0.0 – September, 2025. Monterrey**
+**Version 0.1.0 – September, 2025. Monterrey**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.0.0-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](https://pypi.org/project/harmonsmile/)
 [![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 
@@ -110,6 +110,11 @@ HARMONSMILE/
 ├── results/               # Output data (not installed)
 ├── logs/                  # Error logs (not installed)
 ├── pyproject.toml
+├── CHANGELOG.md
+├── CITATION.cff
+├── COPYING
+├── COPYING.LESSER
+├── LICENSE
 └── README.md
 ```
 
@@ -149,4 +154,4 @@ Monterrey, Mexico – September 2025
 
 ## License
 
-This project is licensed under the terms of the [MIT License](LICENSE).
+This project is licensed under the terms of the [GNU Lesser General Public License v3.0 or later](LICENSE). SPDX identifier: `LGPL-3.0-or-later`.
