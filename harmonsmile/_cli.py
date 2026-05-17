@@ -2,11 +2,18 @@
 """
 Command-line interface for harmonsmile.
 
-Usage examples
---------------
+Implements the ``harmonsmile`` entry point and ``python -m harmonsmile``
+invocation. Arguments are parsed and forwarded to
+:class:`~harmonsmile.pipelines.PubChemIngest` and
+:class:`~harmonsmile.pipelines.CoconutPrep`.
+
+Examples
+--------
+::
+
     harmonsmile --pubchem-in data/db.csv --pubchem-out results/out.csv
     harmonsmile --coconut-in data/db.csv --coconut-smiles SMILES --coconut-out results/out.csv
-    python -m harmonsmile --pubchem-in ...
+    python -m harmonsmile --pubchem-in data/db.csv --pubchem-out results/out.csv
 """
 
 from __future__ import annotations
@@ -28,9 +35,9 @@ def _parse(argv: list[str] | None = None) -> argparse.Namespace:
         description="Harmonize SMILES strings to canonical + isomeric + Kekulized convention.",
     )
     pub = p.add_argument_group("PubChem")
-    pub.add_argument("--pubchem-in",     dest="pub_in",        metavar="FILE")
-    pub.add_argument("--pubchem-out",    dest="pub_out",        metavar="FILE")
-    pub.add_argument("--pubchem-cidcol", dest="pubchem_cidcol", default="PubChem CID", metavar="COL")
+    pub.add_argument("--pubchem-in",     dest="pub_in",         metavar="FILE")
+    pub.add_argument("--pubchem-out",    dest="pub_out",         metavar="FILE")
+    pub.add_argument("--pubchem-cidcol", dest="pubchem_cidcol",  default="PubChem CID", metavar="COL")
 
     coco = p.add_argument_group("COCONUT / independent")
     coco.add_argument("--coconut-in",     dest="coco_in",     metavar="FILE")
@@ -58,6 +65,18 @@ def main(argv: list[str] | None = None) -> None:
     ----------
     argv : list of str, optional
         Argument list. Defaults to sys.argv if None.
+
+    Examples
+    --------
+    Programmatic invocation with PubChem pipeline:
+
+    >>> from harmonsmile._cli import main
+    >>> main(["--pubchem-in", "data/db.csv", "--pubchem-out", "results/out.csv"])
+
+    Programmatic invocation with COCONUT pipeline:
+
+    >>> main(["--coconut-in", "data/db.csv", "--coconut-smiles", "SMILES",
+    ...       "--coconut-out", "results/out.csv"])
     """
     args = _parse(argv)
     ran_any = False

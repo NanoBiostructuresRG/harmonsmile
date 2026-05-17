@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
 Harmonization pipelines for PubChem and COCONUT databases.
+
+Provides :class:`PubChemIngest` for fetching and standardizing PubChem
+compound data, and :class:`CoconutPrep` for harmonizing SMILES from
+COCONUT or independent molecular databases.
 """
 
 from __future__ import annotations
@@ -32,6 +36,15 @@ class PubChemIngest:
         PubChem API client. Created automatically if not provided.
     std : RDKitStandardizer, optional
         SMILES standardizer. Created automatically if not provided.
+
+    Examples
+    --------
+    >>> from harmonsmile import PubChemIngest, Config
+    >>> cfg = Config(
+    ...     input_path="data/database_pubchem.csv",
+    ...     output_path="results/pubchem_harmonized.csv",
+    ... )
+    >>> df = PubChemIngest(cfg).run()
     """
 
     def __init__(
@@ -116,6 +129,15 @@ class CoconutPrep:
         Path to the output CSV file.
     std : RDKitStandardizer, optional
         SMILES standardizer. Created automatically if not provided.
+
+    Examples
+    --------
+    >>> from harmonsmile import CoconutPrep
+    >>> df = CoconutPrep(
+    ...     input_path="data/database_coconut.csv",
+    ...     smiles_col="SMILES",
+    ...     output_path="results/coconut_harmonized.csv",
+    ... ).run()
     """
 
     def __init__(

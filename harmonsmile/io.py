@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
 Table I/O utilities for harmonsmile.
+
+Provides :func:`load_table` and :func:`save_table` for reading and writing
+tabular chemical data, and :func:`sanitize_cid` for cleaning PubChem CID values.
 """
 
 from __future__ import annotations
@@ -22,6 +25,14 @@ def sanitize_cid(x: Any) -> str | None:
     -------
     str or None
         Numeric string CID, or None if the value is missing or invalid.
+
+    Examples
+    --------
+    >>> sanitize_cid(2723949.0)
+    '2723949'
+    >>> sanitize_cid("  12345  ")
+    '12345'
+    >>> sanitize_cid(None)
     """
     if pd.isna(x):
         return None
@@ -40,7 +51,8 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
     Load a tabular file into a DataFrame.
 
     Supports CSV, TSV, TXT, XLSX, XLSM, and XLS formats.
-    Automatically detects delimiter for text files.
+    Automatically detects delimiter for text files; falls back to
+    semicolon separator with latin-1 encoding if auto-detection fails.
 
     Parameters
     ----------
@@ -57,6 +69,11 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
     ------
     ValueError
         If the file format is not supported.
+
+    Examples
+    --------
+    >>> df = load_table("data/database_pubchem.csv")
+    >>> df = load_table("data/database_coconut.xlsx")
     """
     ext = os.path.splitext(path)[1].lower()
     if ext in (".csv", ".tsv", ".txt"):
@@ -80,12 +97,20 @@ def save_table(df: pd.DataFrame, path: str | os.PathLike) -> None:
     """
     Save a DataFrame to a CSV file.
 
+    Parent directories are created automatically if they do not exist.
+
     Parameters
     ----------
     df : pd.DataFrame
         DataFrame to save.
     path : str or os.PathLike
-        Output file path. Parent directories are created if needed.
+        Output file path.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({"SMILES": ["C1=CC=CC=C1"], "SMILES_RDKit": ["C1=CC=CC=C1"]})
+    >>> save_table(df, "results/output.csv")
     """
     os.makedirs(os.path.dirname(os.fspath(path)) or ".", exist_ok=True)
     df.to_csv(path, index=False, encoding="utf-8")

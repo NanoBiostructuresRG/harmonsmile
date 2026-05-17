@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
 SMILES standardization utilities based on RDKit.
+
+Provides :class:`RDKitStandardizer` for converting SMILES strings to
+canonical + isomeric + Kekulized form, following the COCONUT 2.0 convention.
 """
 
 from rdkit import Chem
@@ -28,6 +31,13 @@ class RDKitStandardizer:
         -------
         str or None
             Standardized SMILES, or None if input is invalid.
+
+        Examples
+        --------
+        >>> RDKitStandardizer.to_iso_kek("c1ccccc1")
+        'C1=CC=CC=C1'
+        >>> RDKitStandardizer.to_iso_kek("invalid")
+        >>> RDKitStandardizer.to_iso_kek("")
         """
         if not isinstance(smiles, str) or not smiles.strip():
             return None
@@ -56,6 +66,13 @@ class RDKitStandardizer:
         -------
         str or None
             Standardized SMILES without stereochemistry, or None if invalid.
+
+        Examples
+        --------
+        >>> RDKitStandardizer.to_conn_kek("C[C@@H](O)F")
+        'CC(O)F'
+        >>> RDKitStandardizer.to_conn_kek("invalid")
+        >>> RDKitStandardizer.to_conn_kek("")
         """
         if not isinstance(smiles, str) or not smiles.strip():
             return None

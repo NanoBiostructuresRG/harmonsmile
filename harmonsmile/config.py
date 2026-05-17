@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
 Configuration dataclass for harmonsmile pipelines.
+
+Defines the immutable :class:`Config` object used by
+:class:`~harmonsmile.pipelines.PubChemIngest` to parameterize
+input/output paths, PubChem column names, and properties to fetch.
 """
 
 from __future__ import annotations

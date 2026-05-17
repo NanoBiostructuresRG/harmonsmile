@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
 PubChem REST API client for harmonsmile.
+
+Provides :class:`PubChemClient` for fetching compound properties from the
+PubChem REST API, with exponential backoff and persistent connection reuse.
 """
 
 from __future__ import annotations
@@ -20,12 +23,18 @@ class PubChemClient:
 
     Parameters
     ----------
-    logger : Callable[[str], None], optional
-        Callable for error reporting. Defaults to the module logger.
+    logger : Callable[[str], None] or None, optional
+        Callable for error reporting. Defaults to the module logger warning.
     sleep : float, optional
         Base sleep time in seconds between requests. Defaults to 0.2.
     retries : int, optional
         Number of retry attempts on failure. Defaults to 3.
+
+    Examples
+    --------
+    >>> client = PubChemClient()
+    >>> props = client.fetch_props("2723949", ["SMILES", "MolecularWeight"])
+    >>> client.close()
     """
 
     def __init__(
@@ -56,6 +65,15 @@ class PubChemClient:
         dict[str, Any]
             Dictionary mapping property names to their values.
             Values are None if the fetch failed or CID is empty.
+
+        Examples
+        --------
+        >>> client = PubChemClient()
+        >>> client.fetch_props("2723949", ["SMILES", "MolecularWeight"])
+        {'SMILES': '...', 'MolecularWeight': ...}
+        >>> client.fetch_props("", ["SMILES"])
+        {'SMILES': None}
+        >>> client.close()
         """
         if not cid:
             return {p: None for p in props}
@@ -76,4 +94,15 @@ class PubChemClient:
         return {p: None for p in props}
 
     def close(self) -> None:
+        """
+        Close the underlying HTTP session.
+
+        Should be called when the client is no longer needed to release
+        connection resources.
+
+        Examples
+        --------
+        >>> client = PubChemClient()
+        >>> client.close()
+        """
         self._session.close()
