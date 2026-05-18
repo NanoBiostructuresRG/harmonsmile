@@ -40,3 +40,6 @@ harmonsmile = "harmonsmile._cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["harmonsmile"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
