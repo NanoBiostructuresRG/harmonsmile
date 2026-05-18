@@ -39,7 +39,7 @@ jobs:
         run: python -c "import harmonsmile; print(harmonsmile.__version__, harmonsmile.__all__, hasattr(harmonsmile, 'RDKitStandardizer'))"
 
       - name: Build distributions
-        run: python -m build --no-isolation
+        run: python -m build 
 
       - name: Check distributions
         run: python -m twine check dist/*
