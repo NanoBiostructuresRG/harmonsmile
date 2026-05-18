@@ -13,10 +13,10 @@ Config
     Immutable configuration for harmonsmile pipelines.
 PubChemIngest
     Pipeline for ingesting and harmonizing PubChem compound data.
-CoconutPrep
-    Pipeline for harmonizing SMILES from COCONUT or independent databases.
-PubChemClient
-    Client for fetching compound properties from the PubChem REST API.
+ChEMBLIngest
+    Pipeline for ingesting and harmonizing ChEMBL compound data.
+SMILESPrep
+    Pipeline for harmonizing SMILES from any tabular source.
 
 Functions
 ---------
