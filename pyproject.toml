@@ -43,3 +43,5 @@ packages = ["harmonsmile"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+tmp_path_retention_count = 0
+tmp_path_retention_policy = "none"
