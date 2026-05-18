@@ -22,7 +22,7 @@ import argparse
 import os
 
 from .config import Config
-from .pipelines import PubChemIngest, CoconutPrep
+from .pipelines import PubChemIngest, SMILESPrep
 
 
 def _ensure_dirs() -> None:
@@ -95,7 +95,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.coco_in and args.coco_out and args.coco_smiles:
         _ensure_dirs()
-        CoconutPrep(args.coco_in, args.coco_smiles, args.coco_out).run()
+        SMILESPrep(args.coco_in, args.coco_smiles, args.coco_out).run()
         ran_any = True
 
     if not ran_any:

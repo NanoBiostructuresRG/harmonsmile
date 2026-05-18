@@ -112,7 +112,7 @@ class PubChemIngest:
         return out
 
 
-class CoconutPrep:
+class SMILESPrep:
     """
     Pipeline for harmonizing SMILES from COCONUT or independent databases.
 
@@ -178,3 +178,7 @@ class CoconutPrep:
         n, n_ok = len(df), df["SMILES_RDKit"].notna().sum()
         logger.info("[OK] %s | RDKit: %s/%s", self.output_path, n_ok, n)
         return df
+
+
+# Deprecated alias — will be removed in a future release
+CoconutPrep = SMILESPrep
