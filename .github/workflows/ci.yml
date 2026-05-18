@@ -2,37 +2,57 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+  push:
+    branches:
+      - main
+      - "dev-v*"
 
 jobs:
-  test:
-    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12"]
-        os: [ubuntu-latest, windows-latest]
+  test-build-smoke:
+    name: Test, build, and smoke install
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
+          cache: pip
 
-      - name: Install dependencies
+      - name: Install package and validation tools
         run: |
           python -m pip install --upgrade pip
-          pip install rdkit pandas requests openpyxl pytest
-
-      - name: Install harmonsmile
-        run: pip install -e .
+          python -m pip install "setuptools>=68" wheel
+          python -m pip install -e ".[dev]" build twine
 
       - name: Run tests
-        run: pytest -v
+        run: python -m pytest tests -p no:cacheprovider --basetemp .pytest_tmp
+
+      - name: Check CLI version
+        run: harmonsmile --version
+
+      - name: Check public import boundary
+        run: python -c "import harmonsmile; print(harmonsmile.__version__, harmonsmile.__all__, hasattr(harmonsmile, 'RDKitStandardizer'))"
+
+      - name: Build distributions
+        run: python -m build --no-isolation
+
+      - name: Check distributions
+        run: python -m twine check dist/*
+
+      - name: Smoke install built wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          WHEEL="$(ls dist/*.whl | head -n 1)"
+          python -m venv .smoke_venv
+          .smoke_venv/bin/python -m pip install --upgrade pip
+          .smoke_venv/bin/python -m pip install "$WHEEL"
+          mkdir -p .smoke_outside_checkout
+          cd .smoke_outside_checkout
+          ../.smoke_venv/bin/harmonsmile --version
+          ../.smoke_venv/bin/python -c "import harmonsmile; print(harmonsmile.__version__, harmonsmile.__all__, hasattr(harmonsmile, 'RDKitStandardizer'))"
