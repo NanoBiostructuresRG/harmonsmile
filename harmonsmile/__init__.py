@@ -60,8 +60,8 @@ from .pipelines import PubChemIngest, CoconutPrep
 from .config import Config
 from .pubchem import PubChemClient
 from .io import load_table, save_table
+from .version import __version__, PROJECT_NAME, PROJECT_VERSION, PROJECT_STATUS
 
-__version__ = "0.1.0"
 __author__ = "Flavio F. Contreras-Torres"
 
 __all__ = [
@@ -73,4 +73,7 @@ __all__ = [
     "load_table",
     "save_table",
     "__version__",
+    "PROJECT_NAME",
+    "PROJECT_VERSION",
+    "PROJECT_STATUS"
 ]
