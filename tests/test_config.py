@@ -19,7 +19,10 @@ class TestConfig:
         cfg = Config(input_path="data/in.csv", output_path="results/out.csv")
         assert cfg.error_log == "logs/errors.txt"
         assert cfg.cid_col == "PubChem CID"
-        assert cfg.props == ("SMILES", "MolecularWeight")
+        assert cfg.props == ("SMILES", "ConnectivitySMILES", "MolecularFormula",
+                            "MolecularWeight", "InChI", "InChIKey", "XLogP", "TPSA",
+                            "Charge", "HBondDonorCount", "HBondAcceptorCount",
+                            "RotatableBondCount", "HeavyAtomCount",)
 
     def test_custom_values(self):
         """Custom values override defaults."""

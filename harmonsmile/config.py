@@ -34,14 +34,17 @@ class Config:
     cid_col : str, optional
         Name of the PubChem CID column. Defaults to 'PubChem CID'.
     props : tuple of str, optional
-        PubChem properties to fetch. Defaults to ('SMILES', 'MolecularWeight').
+        PubChem properties to fetch. Defaults to all available properties.
     """
 
     input_path: str
     output_path: str
     error_log: str = "logs/errors.txt"
     cid_col: str = "PubChem CID"
-    props: tuple[str, ...] = ("SMILES", "MolecularWeight")
+    props: tuple[str, ...] = ("SMILES", "ConnectivitySMILES", "MolecularFormula",
+    "MolecularWeight", "InChI", "InChIKey", "XLogP", "TPSA",
+    "Charge", "HBondDonorCount", "HBondAcceptorCount",
+    "RotatableBondCount", "HeavyAtomCount",)
 
     def __post_init__(self) -> None:
         if not self.input_path:
