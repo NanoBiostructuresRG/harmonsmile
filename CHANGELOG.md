@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0] - 2025-09-19
+## [0.1.0] - 2026-05-18
 
 ### Added
 - `RDKitStandardizer` class with two SMILES normalization methods:
@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CITATION.cff` for software citation.
 - `CHANGELOG.md` following Keep a Changelog format.
 - `environment.yml` and `requirements-dev.txt` for reproducible environments.
-- Unit test suite with pytest — 71 tests covering standardize, config, io,
+- Unit test suite with pytest covering standardize, config, io,
   pubchem, chembl, and security.
 
 ### Security

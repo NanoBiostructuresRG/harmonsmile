@@ -191,7 +191,7 @@ If you use HARMONSMILE in your research, please cite it using the metadata in
 [CITATION.cff](CITATION.cff) or the format below:
 
 ```
-Contreras-Torres, F. F. (2025). HARMONSMILE: Harmonize SMILES Strings for
+Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for
 Cheminformatics and Machine Learning (v0.1.0). Tecnologico de Monterrey.
 https://github.com/NanoBiostructuresRG/harmonsmile
 ```
@@ -201,7 +201,7 @@ https://github.com/NanoBiostructuresRG/harmonsmile
 ## Author
 
 Developed by **Flavio F. Contreras-Torres** (Tecnológico de Monterrey)
-Monterrey, Mexico – September 2025
+Monterrey, Mexico – May 2026
 
 ---
 
