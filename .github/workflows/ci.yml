@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - "dev-v*"
+      - "dev/v*"
       - "release/*"
 
 jobs:
