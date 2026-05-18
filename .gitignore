@@ -17,8 +17,12 @@ logs/*
 !results/.gitkeep
 !logs/.gitkeep
 
+# Distribution and build files
 dist/
 *.egg-info/
 build/
 __pycache__/
 *.pyc
+.pytest_tmp/
+.pytest_cache/
+tests_output.txt
