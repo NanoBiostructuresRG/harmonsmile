@@ -73,8 +73,8 @@ class PubChemClient:
         Examples
         --------
         >>> client = PubChemClient()
-        >>> client.fetch_props("2723949", ["SMILES", "MolecularWeight"])
-        {'SMILES': '...', 'MolecularWeight': ...}
+        >>> client.fetch_props("2723949", ["SMILES", "MolecularWeight"])  # doctest: +SKIP
+        {'SMILES': 'CC(=S)N', 'MolecularWeight': '74.15'}
         >>> client.fetch_props("", ["SMILES"])
         {'SMILES': None}
         >>> client.close()
@@ -99,6 +99,38 @@ class PubChemClient:
                     return {p: None for p in props}
                 time.sleep(self.sleep * (2 ** k))
         return {p: None for p in props}
+
+    def __enter__(self) -> PubChemClient:
+        """
+        Enter the context manager.
+
+        Returns
+        -------
+        PubChemClient
+            The client instance itself.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        """
+        Exit the context manager and release resources.
+
+        Parameters
+        ----------
+        exc_type : type or None
+            Exception type, if any.
+        exc_val : BaseException or None
+            Exception value, if any.
+        exc_tb : traceback or None
+            Exception traceback, if any.
+
+        Returns
+        -------
+        bool
+            Always False; exceptions are not suppressed.
+        """
+        self.close()
+        return False
 
     def close(self) -> None:
         """

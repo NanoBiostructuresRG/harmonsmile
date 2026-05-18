@@ -124,12 +124,15 @@ HARMONSMILE/
 │   ├── io.py              # Table I/O utilities
 │   ├── pipelines.py       # PubChemIngest, CoconutPrep
 │   ├── pubchem.py         # PubChem REST client
-│   └── standardize.py     # RDKitStandardizer
+│   ├── standardize.py     # RDKitStandardizer
+│   └── version.py         # Package version metadata
 ├── tests/                 # Unit test suite (pytest)
 ├── data/                  # Input data (not installed)
 ├── results/               # Output data (not installed)
 ├── logs/                  # Error logs (not installed)
 ├── pyproject.toml
+├── environment.yml
+├── requirements-dev.txt
 ├── CHANGELOG.md
 ├── CITATION.cff
 ├── COPYING

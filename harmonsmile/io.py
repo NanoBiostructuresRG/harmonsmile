@@ -3,7 +3,7 @@
 Table I/O utilities for harmonsmile.
 
 Provides :func:`load_table` and :func:`save_table` for reading and writing
-tabular chemical data, and :func:`_sanitize_cid` for cleaning PubChem CID values.
+tabular chemical data.
 """
 
 from __future__ import annotations
