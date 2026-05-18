@@ -15,7 +15,7 @@ import pandas as pd
 
 from .config import Config
 from .io import load_table, save_table
-from .pubchem import PubChemClient
+from .pubchem import _PubChemClient
 from .standardize import RDKitStandardizer
 
 logger = logging.getLogger(__name__)
@@ -50,11 +50,11 @@ class PubChemIngest:
     def __init__(
         self,
         cfg: Config,
-        client: PubChemClient | None = None,
+        client: _PubChemClient | None = None,
         std: RDKitStandardizer | None = None,
     ) -> None:
         self.cfg = cfg
-        self.client = client or PubChemClient(
+        self.client = client or _PubChemClient(
             logger=lambda m: logger.warning(m)
         )
         self.std = std or RDKitStandardizer()

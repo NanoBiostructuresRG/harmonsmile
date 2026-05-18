@@ -47,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Console status messages changed to English for international audience.
 - `Config` is now immutable (`frozen=True`).
 - `CoconutPrep` renamed to `SMILESPrep` to reflect its universal scope — accepts any tabular file with a SMILES column, not only COCONUT databases. `CoconutPrep` remains available as a deprecated alias and will be removed in a future release.
+- `PubChemClient` renamed to `_PubChemClient` (private) to prevent direct use 
+  that could abuse the PubChem REST API. `PubChemClient` remains available as a 
+  deprecated alias and will be removed in a future release.
 
 ### Fixed
 - Double `time.sleep()` call in `PubChemClient.fetch_props()` that caused unnecessary delays

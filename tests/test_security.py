@@ -4,7 +4,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from harmonsmile import Config
-from harmonsmile.pubchem import PubChemClient
+from harmonsmile.pubchem import _PubChemClient
 
 
 class TestConfigSecurity:
@@ -60,22 +60,22 @@ class TestPubChemClientSecurity:
     def test_sleep_below_minimum_rejected(self):
         """sleep below 0.1 raises ValueError."""
         with pytest.raises(ValueError, match="sleep"):
-            PubChemClient(sleep=0.0)
+            _PubChemClient(sleep=0.0)
 
     def test_sleep_above_maximum_rejected(self):
         """sleep above 10.0 raises ValueError."""
         with pytest.raises(ValueError, match="sleep"):
-            PubChemClient(sleep=11.0)
+            _PubChemClient(sleep=11.0)
 
     def test_retries_below_minimum_rejected(self):
         """retries below 1 raises ValueError."""
         with pytest.raises(ValueError, match="retries"):
-            PubChemClient(retries=0)
+            _PubChemClient(retries=0)
 
     def test_retries_above_maximum_rejected(self):
         """retries above 10 raises ValueError."""
         with pytest.raises(ValueError, match="retries"):
-            PubChemClient(retries=11)
+            _PubChemClient(retries=11)
 
     def test_cid_injection_stripped(self):
         """Non-numeric characters in CID are stripped before URL construction."""
@@ -85,7 +85,7 @@ class TestPubChemClientSecurity:
         }
         mock_response.raise_for_status = MagicMock()
 
-        client = PubChemClient(sleep=0.1)
+        client = _PubChemClient(sleep=0.1)
         with patch.object(client._session, "get", return_value=mock_response) as mock_get:
             result = client.fetch_props("123/property/SMILES/JSON?fake=true", ["SMILES"])
 
@@ -97,14 +97,14 @@ class TestPubChemClientSecurity:
 
     def test_fully_non_numeric_cid_returns_none(self):
         """CID with no digits returns None values without network call."""
-        client = PubChemClient()
+        client = _PubChemClient()
         result = client.fetch_props("../../etc/passwd", ["SMILES"])
         assert result == {"SMILES": None}
         client.close()
 
     def test_valid_bounds_accepted(self):
         """Valid sleep and retries values are accepted."""
-        client = PubChemClient(sleep=0.5, retries=5)
+        client = _PubChemClient(sleep=0.5, retries=5)
         assert client.sleep == 0.5
         assert client.retries == 5
         client.close()

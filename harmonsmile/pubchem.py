@@ -14,7 +14,7 @@ from typing import Any, Callable
 import requests
 
 
-class PubChemClient:
+class _PubChemClient:
     """
     Client for fetching compound properties from the PubChem REST API.
 
@@ -100,7 +100,7 @@ class PubChemClient:
                 time.sleep(self.sleep * (2 ** k))
         return {p: None for p in props}
 
-    def __enter__(self) -> PubChemClient:
+    def __enter__(self) -> _PubChemClient:
         """
         Enter the context manager.
 
@@ -145,3 +145,7 @@ class PubChemClient:
         >>> client.close()
         """
         self._session.close()
+
+
+# Deprecated alias — will be removed in a future release
+PubChemClient = _PubChemClient
