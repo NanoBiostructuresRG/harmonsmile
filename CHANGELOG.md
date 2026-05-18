@@ -25,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Config` frozen dataclass for pipeline configuration with `__post_init__` validation.
 - `load_table()` and `save_table()` I/O utilities supporting CSV, TSV, XLSX, and XLS formats,
   with `PathLike` support.
-- `sanitize_cid()` utility for cleaning raw PubChem CID values.
 - Command-line interface via `harmonsmile` entry point and `python -m harmonsmile`,
   with paired argument validation and grouped help output.
 - `pyproject.toml` for PyPI packaging (build backend: hatchling).
@@ -33,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - NumPy-style docstrings with Examples in all public modules and classes.
 - `CITATION.cff` for software citation.
 - `CHANGELOG.md` following Keep a Changelog format.
+
+### Security
+- `PubChemClient`: bounds validation on `sleep` (0.1–10.0 s) and `retries` (1–10).
+- `PubChemClient.fetch_props()`: CID sanitization strips non-numeric characters before URL construction.
+- `Config`: path traversal guard rejects `output_path` containing `..`.
+- `Config`: `VALID_PUBCHEM_PROPS` allowlist validates requested PubChem properties.
 
 ### Changed
 - License changed from MIT to GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later).

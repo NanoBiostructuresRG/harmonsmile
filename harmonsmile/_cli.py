@@ -17,6 +17,7 @@ Examples
 """
 
 from __future__ import annotations
+from .version import __version__
 import argparse
 import os
 
@@ -34,6 +35,7 @@ def _parse(argv: list[str] | None = None) -> argparse.Namespace:
         prog="harmonsmile",
         description="Harmonize SMILES strings to canonical + isomeric + Kekulized convention.",
     )
+    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}",)
     pub = p.add_argument_group("PubChem")
     pub.add_argument("--pubchem-in",     dest="pub_in",         metavar="FILE")
     pub.add_argument("--pubchem-out",    dest="pub_out",         metavar="FILE")

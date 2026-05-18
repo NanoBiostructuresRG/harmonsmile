@@ -53,7 +53,7 @@ class PubChemClient:
         self._session = requests.Session()
         self._session.headers.update({"User-Agent": "harmonsmile (python-requests)"})
 
-    def fetch_props(self, cid: str, props: list[str]) -> dict[str, Any]:
+    def fetch_props(self, cid: str | None, props: list[str]) -> dict[str, Any]:
         """
         Fetch compound properties from PubChem by CID.
 

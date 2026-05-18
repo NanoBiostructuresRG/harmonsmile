@@ -2,6 +2,7 @@
 """Security validation tests for harmonsmile."""
 
 import pytest
+from unittest.mock import MagicMock, patch
 from harmonsmile import Config
 from harmonsmile.pubchem import PubChemClient
 
@@ -78,13 +79,20 @@ class TestPubChemClientSecurity:
 
     def test_cid_injection_stripped(self):
         """Non-numeric characters in CID are stripped before URL construction."""
-        client = PubChemClient()
-        # CID with injection attempt — non-digits stripped, empty result → None values
-        result = client.fetch_props("123/property/SMILES/JSON?fake=true", ["SMILES"])
-        # After stripping non-digits: "123" — valid CID, real network call skipped via check
-        # We only verify no exception is raised and result is a dict
-        assert isinstance(result, dict)
-        assert "SMILES" in result
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "PropertyTable": {"Properties": [{"SMILES": "CCO"}]}
+        }
+        mock_response.raise_for_status = MagicMock()
+
+        client = PubChemClient(sleep=0.1)
+        with patch.object(client._session, "get", return_value=mock_response) as mock_get:
+            result = client.fetch_props("123/property/SMILES/JSON?fake=true", ["SMILES"])
+
+        called_url = mock_get.call_args[0][0]
+        assert "/123/" in called_url
+        assert "fake" not in called_url
+        assert result == {"SMILES": "CCO"}
         client.close()
 
     def test_fully_non_numeric_cid_returns_none(self):

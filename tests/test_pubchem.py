@@ -68,7 +68,6 @@ class TestFetchProps:
     def test_failed_fetch_returns_none_values(self):
         """Failed fetch after all retries returns None values."""
         client = PubChemClient(sleep=0.1, retries=2)
-        errors = []
         with patch.object(client._session, "get", side_effect=Exception("timeout")):
             result = client.fetch_props("999999999", ["SMILES"], )
 

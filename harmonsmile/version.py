@@ -4,6 +4,6 @@
 __version__ = "0.1.0"
 PROJECT_NAME = "HARMONSMILE"
 PROJECT_VERSION = __version__
-PROJECT_STATUS = "pre-stable development"
+PROJECT_STATUS = "alpha"
 
 __all__ = ["__version__", "PROJECT_NAME", "PROJECT_VERSION", "PROJECT_STATUS"]

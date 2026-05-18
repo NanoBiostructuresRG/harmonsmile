@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 VALID_PUBCHEM_PROPS: frozenset[str] = frozenset({
-    "SMILES", "IsomericSMILES", "CanonicalSMILES", "MolecularWeight",
+    "SMILES", "ConnectivitySMILES", "MolecularWeight",
     "MolecularFormula", "InChI", "InChIKey", "XLogP", "TPSA",
     "HBondDonorCount", "HBondAcceptorCount", "RotatableBondCount",
     "HeavyAtomCount", "Charge",
