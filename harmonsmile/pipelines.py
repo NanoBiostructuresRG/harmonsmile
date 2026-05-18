@@ -3,7 +3,7 @@
 Harmonization pipelines for PubChem and COCONUT databases.
 
 Provides :class:`PubChemIngest` for fetching and standardizing PubChem
-compound data, and :class:`CoconutPrep` for harmonizing SMILES from
+compound data, and :class:`SMILESPrep` for harmonizing SMILES from
 COCONUT or independent molecular databases.
 """
 
@@ -95,7 +95,14 @@ class PubChemIngest:
         if "MolecularWeight" in out.columns:
             out.rename(columns={"MolecularWeight": "MW"}, inplace=True)
 
-        desired = ["id", "PubChem CID", "MW", "SMILES", "SMILES_RDKit"]
+        desired = ["id", "PubChem CID",
+                   "SMILES", "SMILES_RDKit", "ConnectivitySMILES",
+                   "MolecularFormula", "MW", "InChI", "InChIKey",
+                   "XLogP", "TPSA", "Charge",
+                   "HBondDonorCount", "HBondAcceptorCount",
+                   "RotatableBondCount", "HeavyAtomCount",
+                   ]
+        
         present = [c for c in desired if c in out.columns]
         others  = [c for c in out.columns if c not in present]
 
@@ -132,8 +139,8 @@ class SMILESPrep:
 
     Examples
     --------
-    >>> from harmonsmile import CoconutPrep
-    >>> df = CoconutPrep(
+    >>> from harmonsmile import SMILESPrep
+    >>> df = SMILESPrep(
     ...     input_path="data/database_coconut.csv",
     ...     smiles_col="SMILES",
     ...     output_path="results/coconut_harmonized.csv",
