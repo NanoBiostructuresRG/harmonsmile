@@ -15,6 +15,7 @@ import pandas as pd
 
 from .config import Config
 from .io import load_table, save_table
+from .chembl import _ChEMBLClient
 from .pubchem import _PubChemClient
 from .standardize import RDKitStandardizer
 
@@ -116,6 +117,133 @@ class PubChemIngest:
         n_src = out["SMILES"].notna().sum() if "SMILES" in out.columns else 0
         n_rd  = out["SMILES_RDKit"].notna().sum() if "SMILES_RDKit" in out.columns else 0
         logger.info("[OK] %s | source SMILES: %s/%s | RDKit: %s/%s", self.cfg.output_path, n_src, n, n_rd, n)
+        return out
+
+
+_CHEMBL_RENAME: dict[str, str] = {
+    "pref_name":          "name",
+    "canonical_smiles":   "SMILES",
+    "standard_inchi":     "InChI",
+    "standard_inchi_key": "InChIKey",
+    "full_mwt":           "MW",
+    "full_molformula":    "MolecularFormula",
+    "alogp":              "ALogP",
+    "psa":                "TPSA",
+    "hba":                "HBA",
+    "hbd":                "HBD",
+    "rtb":                "RotatableBonds",
+    "heavy_atoms":        "HeavyAtoms",
+    "qed_weighted":       "QED",
+    "num_ro5_violations": "Ro5Violations",
+}
+
+
+class ChEMBLIngest:
+    """
+    Pipeline for ingesting and harmonizing ChEMBL compound data.
+
+    Fetches properties from the ChEMBL REST API by ChEMBL ID, applies
+    RDKit canonicalization to produce a standardized SMILES_RDKit column,
+    and saves the result as a CSV file.
+
+    Parameters
+    ----------
+    input_path : str or os.PathLike
+        Path to the input file (CSV, TSV, XLSX).
+    output_path : str or os.PathLike
+        Path to the output CSV file.
+    chembl_id_col : str, optional
+        Name of the ChEMBL ID column in the input file. Defaults to 'ChEMBL ID'.
+    client : _ChEMBLClient or None, optional
+        ChEMBL API client. Created automatically if not provided.
+    std : RDKitStandardizer or None, optional
+        SMILES standardizer. Created automatically if not provided.
+
+    Examples
+    --------
+    >>> from harmonsmile import ChEMBLIngest
+    >>> df = ChEMBLIngest(
+    ...     input_path="data/database_chembl.csv",
+    ...     output_path="results/chembl_harmonized.csv",
+    ... ).run()
+    """
+
+    def __init__(
+        self,
+        input_path: str | os.PathLike,
+        output_path: str | os.PathLike,
+        chembl_id_col: str = "ChEMBL ID",
+        client: _ChEMBLClient | None = None,
+        std: RDKitStandardizer | None = None,
+    ) -> None:
+        self.input_path    = input_path
+        self.output_path   = output_path
+        self.chembl_id_col = chembl_id_col
+        self.client = client or _ChEMBLClient(
+            logger=lambda m: logger.warning(m)
+        )
+        self.std = std or RDKitStandardizer()
+
+    def run(self) -> pd.DataFrame:
+        """
+        Execute the ChEMBL ingestion pipeline.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with original columns plus fetched and renamed
+            ChEMBL properties and a standardized SMILES_RDKit column.
+
+        Raises
+        ------
+        ValueError
+            If the configured ChEMBL ID column is not found in the input file.
+        """
+        df = load_table(self.input_path)
+
+        if self.chembl_id_col not in df.columns:
+            raise ValueError(
+                f"ChEMBL ID column '{self.chembl_id_col}' not found. "
+                f"Available columns: {list(df.columns)}"
+            )
+
+        props = df[self.chembl_id_col].apply(self.client.fetch_props)
+        props_df = pd.DataFrame(list(props))
+
+        # Drop the API's molecule_chembl_id; the input column already holds the ID
+        if "molecule_chembl_id" in props_df.columns:
+            props_df = props_df.drop(columns=["molecule_chembl_id"])
+
+        out = pd.concat([df, props_df], axis=1)
+        out.rename(columns=_CHEMBL_RENAME, inplace=True)
+
+        # SMILES harmonization to COCONUT 2.0 convention
+        if "SMILES" in out.columns:
+            out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
+
+        desired = [
+            "id", "ChEMBL ID", "name", "SMILES", "SMILES_RDKit",
+            "InChI", "InChIKey", "MW", "MolecularFormula",
+            "ALogP", "TPSA", "HBA", "HBD",
+            "RotatableBonds", "HeavyAtoms", "QED", "Ro5Violations",
+        ]
+        present = [c for c in desired if c in out.columns]
+        others  = [c for c in out.columns if c not in present]
+
+        _numeric_cols = [
+            "MW", "ALogP", "TPSA", "HBA", "HBD",
+            "RotatableBonds", "HeavyAtoms", "QED", "Ro5Violations",
+        ]
+        for col in _numeric_cols:
+            if col in out.columns:
+                out[col] = pd.to_numeric(out[col], errors="coerce")
+
+        out = out[present + others]
+        save_table(out, self.output_path)
+
+        n    = len(out)
+        n_rd = out["SMILES_RDKit"].notna().sum() if "SMILES_RDKit" in out.columns else 0
+        logger.info("[OK] %s | RDKit: %s/%s", self.output_path, n_rd, n)
         return out
 
 

@@ -56,7 +56,7 @@ Fetch and harmonize PubChem data:
 """
 
 from .standardize import RDKitStandardizer
-from .pipelines import PubChemIngest, SMILESPrep, CoconutPrep
+from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep, CoconutPrep
 from .config import Config
 from .pubchem import PubChemClient
 from .io import load_table, save_table
@@ -67,6 +67,7 @@ __author__ = "Flavio F. Contreras-Torres"
 __all__ = [
     "RDKitStandardizer",
     "PubChemIngest",
+    "ChEMBLIngest",
     "SMILESPrep",
     "Config",
     "load_table",
