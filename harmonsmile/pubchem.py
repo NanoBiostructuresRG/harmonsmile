@@ -43,6 +43,10 @@ class PubChemClient:
         sleep: float = 0.2,
         retries: int = 3,
     ) -> None:
+        if not 0.1 <= sleep <= 10.0:
+            raise ValueError("sleep must be between 0.1 and 10.0 seconds.")
+        if not 1 <= retries <= 10:
+            raise ValueError("retries must be between 1 and 10.")
         self.log = logger or (lambda m: logging.getLogger(__name__).warning(m))
         self.sleep = sleep
         self.retries = retries
@@ -75,6 +79,9 @@ class PubChemClient:
         {'SMILES': None}
         >>> client.close()
         """
+        if not cid:
+            return {p: None for p in props}
+        cid = "".join(ch for ch in str(cid) if ch.isdigit())
         if not cid:
             return {p: None for p in props}
         base = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid"

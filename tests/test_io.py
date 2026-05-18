@@ -5,39 +5,39 @@ import os
 import tempfile
 import pytest
 import pandas as pd
-from harmonsmile.io import sanitize_cid, load_table, save_table
+from harmonsmile.io import _sanitize_cid, load_table, save_table
 
 
 class TestSanitizeCid:
-    """Tests for sanitize_cid."""
+    """Tests for _sanitize_cid."""
 
     def test_float_cid(self):
         """Float CID is converted to integer string."""
-        assert sanitize_cid(2723949.0) == "2723949"
+        assert _sanitize_cid(2723949.0) == "2723949"
 
     def test_string_cid(self):
         """String CID with whitespace is cleaned."""
-        assert sanitize_cid("  12345  ") == "12345"
+        assert _sanitize_cid("  12345  ") == "12345"
 
     def test_int_cid(self):
         """Integer CID is converted to string."""
-        assert sanitize_cid(12345) == "12345"
+        assert _sanitize_cid(12345) == "12345"
 
     def test_none_returns_none(self):
         """None returns None."""
-        assert sanitize_cid(None) is None
+        assert _sanitize_cid(None) is None
 
     def test_nan_returns_none(self):
         """NaN returns None."""
-        assert sanitize_cid(float("nan")) is None
+        assert _sanitize_cid(float("nan")) is None
 
     def test_non_numeric_string_returns_none(self):
         """Non-numeric string returns None."""
-        assert sanitize_cid("abc") is None
+        assert _sanitize_cid("abc") is None
 
     def test_mixed_string_extracts_digits(self):
         """String with mixed characters extracts only digits."""
-        assert sanitize_cid("CID12345") == "12345"
+        assert _sanitize_cid("CID12345") == "12345"
 
 
 class TestLoadTable:

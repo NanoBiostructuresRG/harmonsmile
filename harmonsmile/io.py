@@ -3,7 +3,7 @@
 Table I/O utilities for harmonsmile.
 
 Provides :func:`load_table` and :func:`save_table` for reading and writing
-tabular chemical data, and :func:`sanitize_cid` for cleaning PubChem CID values.
+tabular chemical data, and :func:`_sanitize_cid` for cleaning PubChem CID values.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from typing import Any
 import pandas as pd
 
 
-def sanitize_cid(x: Any) -> str | None:
+def _sanitize_cid(x: Any) -> str | None:
     """
     Sanitize a PubChem CID value to a clean numeric string.
 
@@ -28,11 +28,11 @@ def sanitize_cid(x: Any) -> str | None:
 
     Examples
     --------
-    >>> sanitize_cid(2723949.0)
+    >>> _sanitize_cid(2723949.0)
     '2723949'
-    >>> sanitize_cid("  12345  ")
+    >>> _sanitize_cid("  12345  ")
     '12345'
-    >>> sanitize_cid(None)
+    >>> _sanitize_cid(None)
     """
     if pd.isna(x):
         return None
@@ -89,7 +89,7 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
     if "id" in df.columns:
         df["id"] = pd.to_numeric(df["id"], errors="coerce").astype("Int64")
     if "PubChem CID" in df.columns:
-        df["PubChem CID"] = df["PubChem CID"].apply(sanitize_cid)
+        df["PubChem CID"] = df["PubChem CID"].apply(_sanitize_cid)
     return df
 
 

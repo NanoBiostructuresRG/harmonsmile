@@ -57,7 +57,7 @@ class TestFetchProps:
         }
         mock_response.raise_for_status = MagicMock()
 
-        client = PubChemClient(sleep=0)
+        client = PubChemClient(sleep=0.1)
         with patch.object(client._session, "get", return_value=mock_response):
             result = client.fetch_props("702", ["SMILES", "MolecularWeight"])
 
@@ -67,7 +67,7 @@ class TestFetchProps:
 
     def test_failed_fetch_returns_none_values(self):
         """Failed fetch after all retries returns None values."""
-        client = PubChemClient(sleep=0, retries=2)
+        client = PubChemClient(sleep=0.1, retries=2)
         errors = []
         with patch.object(client._session, "get", side_effect=Exception("timeout")):
             result = client.fetch_props("999999999", ["SMILES"], )

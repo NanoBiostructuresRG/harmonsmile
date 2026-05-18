@@ -10,6 +10,13 @@ input/output paths, PubChem column names, and properties to fetch.
 from __future__ import annotations
 from dataclasses import dataclass
 
+VALID_PUBCHEM_PROPS: frozenset[str] = frozenset({
+    "SMILES", "IsomericSMILES", "CanonicalSMILES", "MolecularWeight",
+    "MolecularFormula", "InChI", "InChIKey", "XLogP", "TPSA",
+    "HBondDonorCount", "HBondAcceptorCount", "RotatableBondCount",
+    "HeavyAtomCount", "Charge",
+})
+
 
 @dataclass(frozen=True)
 class Config:
@@ -41,5 +48,10 @@ class Config:
             raise ValueError("input_path must not be empty.")
         if not self.output_path:
             raise ValueError("output_path must not be empty.")
+        if ".." in self.output_path:
+            raise ValueError("output_path must not contain path traversal patterns ('..').")
         if not self.props:
             raise ValueError("props must contain at least one PubChem property.")
+        invalid = {p for p in self.props if p not in VALID_PUBCHEM_PROPS}
+        if invalid:
+            raise ValueError(f"Invalid PubChem properties: {sorted(invalid)}")
