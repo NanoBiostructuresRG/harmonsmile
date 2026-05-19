@@ -81,8 +81,8 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
 
     Examples
     --------
-    >>> df = load_table("data/database_pubchem.csv")
-    >>> df = load_table("data/database_coconut.xlsx")
+    >>> df = load_table("examples/example_chembl.csv")
+    >>> df = load_table("examples/example_pubchem.csv")
     """
     if not os.path.exists(path):
         raise FileNotFoundError(f"Input file not found: {path}")
