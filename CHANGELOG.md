@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.3] - 2026-05-19
+
+### Changed
+- `_cli.py`: removed deprecated `--coconut-in`, `--coconut-out`, and
+  `--coconut-smiles` flags and their migration logic. These aliases were
+  introduced in v0.1.2 as a compatibility bridge; use `--smiles-in`,
+  `--smiles-out`, and `--smiles-col` instead.
+- `pipelines.py`: removed `CoconutPrep` deprecated alias for `SMILESPrep`.
+- `__init__.py`: removed `CoconutPrep` from imports and `__all__`.
+
+### Fixed
+- `config.py`: `Config.__post_init__` now raises `ValueError` when `cid_col`
+  is an empty or whitespace-only string.
+- `config.py`: `Config.__post_init__` now rejects `input_path` values
+  containing `..` (path traversal), consistent with the existing check on
+  `output_path`.
+- `io.py`: `load_table` now raises `FileNotFoundError` with a descriptive
+  message when the input file does not exist, instead of propagating a raw
+  pandas or OS error.
+- `io.py`: `load_table` now raises `ValueError` when the loaded DataFrame
+  has zero rows.
+- `io.py`: `_sanitize_cid` no longer raises on unexpected input types
+  (`bool`, `list`, `dict`, etc.); the `pd.isna()` call is now wrapped in a
+  try/except.
+- `pipelines.py`: `PubChemIngest.run()`, `ChEMBLIngest.run()`, and
+  `SMILESPrep.run()` now raise `ValueError` early when the input DataFrame
+  is empty, instead of silently producing an empty output file.
+- `pipelines.py`: `PubChemIngest.run()` now emits a `logger.warning` when
+  the `SMILES` column is absent after fetching, making the silent omission
+  of `SMILES_RDKit` visible.
+- `pipelines.py`: `SMILESPrep.run()` now creates output directories only
+  after `load_table` succeeds, avoiding the creation of empty directories
+  when the input file does not exist.
+
+### Improved
+- `_cli.py`: `--help` output now includes a concrete usage epilog with
+  examples for every pipeline (PubChem batch, ChEMBL batch, SMILES batch,
+  single-entry CID, single-entry ChEMBL ID, multi-pipeline call).
+- `_cli.py`: the "nothing to run" error message now lists all valid flag
+  combinations and includes usage examples.
+
+### Docs
+- `config.py`: `Config` docstring updated to document new `cid_col` and
+  `input_path` validation in the `Raises` section.
+- `io.load_table`: `Raises` section updated to document `FileNotFoundError`
+  and empty-DataFrame `ValueError`.
+- `io.save_table`: documented the automatic creation of missing parent
+  directories.
+- `pipelines.PubChemIngest.run()`, `ChEMBLIngest.run()`, `SMILESPrep.run()`:
+  `Raises` sections updated to document empty-DataFrame `ValueError`.
+
+### Tests
+- Added 14 new test cases and removed 4 obsolete ones (deprecated coconut
+  CLI aliases), for a net total of 119 tests (+10 vs v0.1.2).
+- New cases cover: `Config` validation (`cid_col` empty or whitespace,
+  `input_path` path traversal), `_sanitize_cid` edge types (`bool`, `list`,
+  `dict`), `load_table` error paths (nonexistent file, empty file),
+  empty-DataFrame guards in all three pipelines, missing-`SMILES`-column
+  warning in `PubChemIngest`, and a new `test_pipelines.py` module.
+
+---
+
 ## [0.1.2] - 2026-05-18
 
 ### Added
@@ -127,6 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.1.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/NanoBiostructuresRG/harmonsmile/releases/tag/v0.1.1
 [0.1.0]: https://github.com/NanoBiostructuresRG/harmonsmile/releases/tag/v0.1.0
