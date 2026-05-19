@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "harmonsmile"
-version = "0.1.2"
+version = "0.1.3"
 description = "Toolkit for harmonizing SMILES strings to canonical + isomeric + Kekulized convention (RDKit / COCONUT 2.0)"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
     { name = "Flavio F. Contreras-Torres", email = "contreras.flavio@tec.mx" }
 ]
-keywords = ["cheminformatics", "SMILES", "RDKit", "COCONUT", "PubChem", "drug-discovery"]
+keywords = ["cheminformatics", "SMILES", "RDKit", "ChEMBL", "PubChem", "drug-discovery"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
