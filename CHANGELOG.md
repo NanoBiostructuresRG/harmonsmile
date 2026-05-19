@@ -7,7 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.1.2] - 2026-05-18
+
+### Added
+- CLI: Single Entry mode — `harmonsmile --pubchem-cid <CID>` and
+  `harmonsmile --chembl-id <ID>` fetch and harmonize a single compound
+  without an input file. Output saved automatically to
+  `results/CID{cid}_harmonsmile.csv` and `results/{id}_harmonsmile.csv`.
+- `examples/` directory with real-world fetch scripts and capsaicin datasets
+  for PubChem, ChEMBL, and SMILES batch modes.
+- Unit tests for CLI (`test_cli.py`, 32 tests) covering batch modes,
+  single entry modes, deprecated aliases, mutual exclusion, and validation.
+
+### Changed
+- CLI: `--coconut-in`, `--coconut-out`, `--coconut-smiles` renamed to
+  `--smiles-in`, `--smiles-out`, `--smiles-col` for source-agnostic naming.
+  Deprecated aliases kept with `DeprecationWarning`.
+- CLI help groups renamed: `"COCONUT / independent"` → `"SMILES (batch)"`;
+  `"PubChem"` → `"PubChem (batch)"`; `"ChEMBL"` → `"ChEMBL (batch)"`.
+- `API.md` formalized with complete reference for all public classes and methods.
+
+### Fixed
+- `ChEMBLIngest`: duplicate `name` column in output when input file already
+  contained a `name` column and ChEMBL API returned `pref_name`.
+
+### Docs
+- `RDKitStandardizer.to_iso_kek()`: added Notes section documenting E/Z
+  geometry behavior — chiral centers are preserved; E/Z on double bonds may
+  be lost for ambiguous cases during kekulization (known RDKit behavior).
 
 ---
 
@@ -100,6 +127,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.0...HEAD
+[0.1.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/NanoBiostructuresRG/harmonsmile/releases/tag/v0.1.1
 [0.1.0]: https://github.com/NanoBiostructuresRG/harmonsmile/releases/tag/v0.1.0
