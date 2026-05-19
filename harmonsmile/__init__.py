@@ -38,25 +38,25 @@ Standardize a single SMILES string:
 
 Harmonize a COCONUT or independent database:
 
->>> from harmonsmile import CoconutPrep
->>> CoconutPrep(
-...     input_path="data/database.csv",
+>>> from harmonsmile import SMILESPrep
+>>> SMILESPrep(
+...     input_path="examples/example_smiles.csv",
 ...     smiles_col="SMILES",
-...     output_path="results/database_harmonized.csv",
+...     output_path="results/example_harmonized.csv",
 ... ).run()
 
 Fetch and harmonize PubChem data:
 
 >>> from harmonsmile import PubChemIngest, Config
 >>> cfg = Config(
-...     input_path="data/database_pubchem.csv",
+...     input_path="examples/example_pubchem.csv",
 ...     output_path="results/pubchem_harmonized.csv",
 ... )
 >>> PubChemIngest(cfg).run()
 """
 
 from .standardize import RDKitStandardizer
-from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep, CoconutPrep
+from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 from .config import Config
 from .pubchem import PubChemClient
 from .io import load_table, save_table

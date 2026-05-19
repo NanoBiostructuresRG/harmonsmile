@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
-Harmonization pipelines for PubChem and COCONUT databases.
+Harmonization pipelines for PubChem and others databases.
 
 Provides :class:`PubChemIngest` for fetching and standardizing PubChem
 compound data, and :class:`SMILESPrep` for harmonizing SMILES from
@@ -33,7 +33,7 @@ class PubChemIngest:
     ----------
     cfg : Config
         Pipeline configuration.
-    client : PubChemClient, optional
+    client : _PubChemClient, optional
         PubChem API client. Created automatically if not provided.
     std : RDKitStandardizer, optional
         SMILES standardizer. Created automatically if not provided.
@@ -42,7 +42,7 @@ class PubChemIngest:
     --------
     >>> from harmonsmile import PubChemIngest, Config
     >>> cfg = Config(
-    ...     input_path="data/database_pubchem.csv",
+    ...     input_path="examples/example_pubchem.csv",
     ...     output_path="results/pubchem_harmonized.csv",
     ... )
     >>> df = PubChemIngest(cfg).run()
@@ -74,8 +74,15 @@ class PubChemIngest:
         ------
         ValueError
             If the configured CID column is not found in the input file.
+        ValueError
+            If the input file has zero rows.
         """
         df = load_table(self.cfg.input_path)
+
+        if df.empty:
+            raise ValueError(
+                f"Input file has zero rows: {self.cfg.input_path}"
+            )
 
         if self.cfg.cid_col not in df.columns:
             raise ValueError(
@@ -92,6 +99,12 @@ class PubChemIngest:
         # SMILES harmonization to COCONUT 2.0 convention
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
+        else:
+            logger.warning(
+                "[PubChemIngest] 'SMILES' column not found after fetching properties "
+                "— SMILES_RDKit will not be generated. "
+                "Ensure 'SMILES' is included in Config.props."
+            )
 
         if "MolecularWeight" in out.columns:
             out.rename(columns={"MolecularWeight": "MW"}, inplace=True)
@@ -103,7 +116,7 @@ class PubChemIngest:
                    "HBondDonorCount", "HBondAcceptorCount",
                    "RotatableBondCount", "HeavyAtomCount",
                    ]
-        
+
         present = [c for c in desired if c in out.columns]
         others  = [c for c in out.columns if c not in present]
 
@@ -163,7 +176,7 @@ class ChEMBLIngest:
     --------
     >>> from harmonsmile import ChEMBLIngest
     >>> df = ChEMBLIngest(
-    ...     input_path="data/database_chembl.csv",
+    ...     input_path="examples/example_chembl.csv",
     ...     output_path="results/chembl_harmonized.csv",
     ... ).run()
     """
@@ -198,8 +211,15 @@ class ChEMBLIngest:
         ------
         ValueError
             If the configured ChEMBL ID column is not found in the input file.
+        ValueError
+            If the input file has zero rows.
         """
         df = load_table(self.input_path)
+
+        if df.empty:
+            raise ValueError(
+                f"Input file has zero rows: {self.input_path}"
+            )
 
         if self.chembl_id_col not in df.columns:
             raise ValueError(
@@ -275,9 +295,9 @@ class SMILESPrep:
     --------
     >>> from harmonsmile import SMILESPrep
     >>> df = SMILESPrep(
-    ...     input_path="data/database_coconut.csv",
+    ...     input_path="examples/example_smiles.csv",
     ...     smiles_col="SMILES",
-    ...     output_path="results/coconut_harmonized.csv",
+    ...     output_path="results/ecxample_harmonized.csv",
     ... ).run()
     """
 
@@ -295,7 +315,7 @@ class SMILESPrep:
 
     def run(self) -> pd.DataFrame:
         """
-        Execute the COCONUT preparation pipeline.
+        Execute the SMILES preparation pipeline.
 
         Returns
         -------
@@ -306,20 +326,25 @@ class SMILESPrep:
         ------
         ValueError
             If the specified SMILES column is not found in the input file.
+        ValueError
+            If the input file has zero rows.
         """
-        os.makedirs(os.path.dirname(os.fspath(self.output_path)) or ".", exist_ok=True)
         df = load_table(self.input_path)
+
+        if df.empty:
+            raise ValueError(
+                f"Input file has zero rows: {self.input_path}"
+            )
+
         if self.smiles_col not in df.columns:
             raise ValueError(
                 f"Column '{self.smiles_col}' not found. "
                 f"Available columns: {list(df.columns)}"
             )
+
         df["SMILES_RDKit"] = df[self.smiles_col].apply(self.std.to_iso_kek)
         save_table(df, self.output_path)
+
         n, n_ok = len(df), df["SMILES_RDKit"].notna().sum()
         logger.info("[OK] %s | RDKit: %s/%s", self.output_path, n_ok, n)
         return df
-
-
-# Deprecated alias — will be removed in a future release
-CoconutPrep = SMILESPrep
