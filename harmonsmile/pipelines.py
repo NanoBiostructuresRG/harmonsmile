@@ -215,6 +215,12 @@ class ChEMBLIngest:
             props_df = props_df.drop(columns=["molecule_chembl_id"])
 
         out = pd.concat([df, props_df], axis=1)
+
+        # If input already has a 'name' column and the API returned 'pref_name',
+        # drop the pre-existing 'name' to avoid duplicate columns after rename.
+        if "name" in out.columns and "pref_name" in out.columns:
+            out = out.drop(columns=["name"])
+
         out.rename(columns=_CHEMBL_RENAME, inplace=True)
 
         # SMILES harmonization to COCONUT 2.0 convention
