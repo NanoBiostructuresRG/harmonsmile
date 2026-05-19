@@ -33,8 +33,13 @@ def _sanitize_cid(x: Any) -> str | None:
     >>> _sanitize_cid("  12345  ")
     '12345'
     >>> _sanitize_cid(None)
+    >>> _sanitize_cid(True)
+    >>> _sanitize_cid([1, 2, 3])
     """
-    if pd.isna(x):
+    try:
+        if pd.isna(x):
+            return None
+    except (TypeError, ValueError):
         return None
     try:
         if isinstance(x, float):
@@ -67,14 +72,21 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
 
     Raises
     ------
+    FileNotFoundError
+        If the file does not exist at the given path.
     ValueError
         If the file format is not supported.
+    ValueError
+        If the loaded DataFrame has zero rows.
 
     Examples
     --------
     >>> df = load_table("data/database_pubchem.csv")
     >>> df = load_table("data/database_coconut.xlsx")
     """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Input file not found: {path}")
+
     ext = os.path.splitext(path)[1].lower()
     if ext in (".csv", ".tsv", ".txt"):
         try:
@@ -85,6 +97,9 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
         df = pd.read_excel(path)
     else:
         raise ValueError(f"Unsupported format: {path}")
+
+    if df.empty:
+        raise ValueError(f"Input file has zero rows: {path}")
 
     if "id" in df.columns:
         df["id"] = pd.to_numeric(df["id"], errors="coerce").astype("Int64")
@@ -104,7 +119,7 @@ def save_table(df: pd.DataFrame, path: str | os.PathLike) -> None:
     df : pd.DataFrame
         DataFrame to save.
     path : str or os.PathLike
-        Output file path.
+        Output file path. Parent directories are created as needed.
 
     Examples
     --------
