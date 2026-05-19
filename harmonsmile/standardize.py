@@ -37,12 +37,12 @@ class RDKitStandardizer:
         Chiral centers (e.g. ``[C@@H]``) are preserved because RDKit encodes
         tetrahedral stereochemistry independently of kekulization.
 
-        E/Z geometry on double bonds (``/`` and ``\`` in SMILES) is preserved
+        E/Z geometry on double bonds (``/`` and ``\\`` in SMILES) is preserved
         only when RDKit can unambiguously determine the configuration after
         parsing and sanitization. For some double bonds — particularly those
         in conjugated systems or where the source SMILES omits directional
         bonds on one side — RDKit cannot resolve the geometry and silently
-        drops the ``/``/``\`` notation. This is a known RDKit behavior, not a
+        drops the ``/`` and ``\\`` notation. This is a known RDKit behavior, not a
         bug in harmonsmile. If E/Z fidelity is critical for your use case,
         validate ``SMILES_RDKit`` against the source SMILES.
 
