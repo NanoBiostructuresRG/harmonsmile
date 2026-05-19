@@ -29,12 +29,59 @@ from .version import __version__
 import argparse
 import os
 import tempfile
-import warnings
 
 import pandas as pd
 
 from .config import Config
 from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
+
+
+_EPILOG = """\
+examples:
+  # PubChem batch — fetch properties and harmonize SMILES
+  harmonsmile --pubchem-in examples/example_pubchem.csv --pubchem-out results/pubchem_out.csv
+
+  # PubChem batch — custom CID column name
+  harmonsmile --pubchem-in examples/example_pubchem.csv --pubchem-cidcol "CID" --pubchem-out results/pubchem_out.csv
+
+  # ChEMBL batch — fetch properties and harmonize SMILES
+  harmonsmile --chembl-in examples/example_chembl.csv --chembl-out results/chembl_out.csv
+
+  # SMILES batch — harmonize an existing SMILES column (COCONUT, in-house, etc.)
+  harmonsmile --smiles-in examples/example_smiles.csv --smiles-col canonical_smiles --smiles-out results/smiles_out.csv
+
+  # Single entry — fetch one compound by PubChem CID (output saved to results/)
+  harmonsmile --pubchem-cid 2723949
+
+  # Single entry — fetch one compound by ChEMBL ID (output saved to results/)
+  harmonsmile --chembl-id CHEMBL294199
+
+  # Run as a Python module
+  python -m harmonsmile --pubchem-in examples/example_pubchem.csv --pubchem-out results/pubchem_out.csv
+
+  # Run multiple pipelines in one call
+  harmonsmile \\
+    --pubchem-in examples/example_pubchem.csv --pubchem-out results/pubchem_out.csv \\
+    --smiles-in  examples/example_smiles.csv --smiles-col SMILES --smiles-out results/smiles_out.csv
+"""
+
+_NOTHING_TO_RUN = """\
+error: no pipeline specified.
+
+Provide at least one of the following:
+
+  --pubchem-in FILE --pubchem-out FILE
+  --chembl-in  FILE --chembl-out  FILE
+  --smiles-in  FILE --smiles-col  COL --smiles-out FILE
+  --pubchem-cid CID
+  --chembl-id   ID
+
+example:
+  harmonsmile --pubchem-cid 2723949
+  harmonsmile --smiles-in data/db.csv --smiles-col SMILES --smiles-out results/out.csv
+
+Run 'harmonsmile --help' for full usage.
+"""
 
 
 def _ensure_dirs() -> None:
@@ -45,9 +92,14 @@ def _ensure_dirs() -> None:
 def _parse(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="harmonsmile",
-        description="Harmonize SMILES strings to canonical + isomeric + Kekulized convention.",
+        description=(
+            "Harmonize SMILES strings to canonical + isomeric + Kekulized convention.\n"
+            "Supports PubChem, ChEMBL, and any tabular SMILES source."
+        ),
+        epilog=_EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}",)
+    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     pub = p.add_argument_group("PubChem (batch)")
     pub.add_argument("--pubchem-in",     dest="pub_in",         metavar="FILE")
@@ -63,34 +115,12 @@ def _parse(argv: list[str] | None = None) -> argparse.Namespace:
     smiles.add_argument("--smiles-in",  dest="smiles_in",  metavar="FILE")
     smiles.add_argument("--smiles-out", dest="smiles_out", metavar="FILE")
     smiles.add_argument("--smiles-col", dest="smiles_col", metavar="COL")
-    # Deprecated --coconut-* aliases — hidden from --help
-    smiles.add_argument("--coconut-in",     dest="coconut_in_dep",     metavar="FILE", help=argparse.SUPPRESS)
-    smiles.add_argument("--coconut-out",    dest="coconut_out_dep",    metavar="FILE", help=argparse.SUPPRESS)
-    smiles.add_argument("--coconut-smiles", dest="coconut_smiles_dep", metavar="COL",  help=argparse.SUPPRESS)
 
     single = p.add_argument_group("Single Entry")
     single.add_argument("--pubchem-cid", dest="pubchem_cid", metavar="CID")
     single.add_argument("--chembl-id",   dest="chembl_id",   metavar="ID")
 
     args = p.parse_args(argv)
-
-    # Migrate deprecated --coconut-* values and emit warnings
-    _deprecated = [
-        ("coconut_in_dep",     "smiles_in",  "--coconut-in",     "--smiles-in"),
-        ("coconut_out_dep",    "smiles_out", "--coconut-out",    "--smiles-out"),
-        ("coconut_smiles_dep", "smiles_col", "--coconut-smiles", "--smiles-col"),
-    ]
-    for dep_dest, new_dest, old_flag, new_flag in _deprecated:
-        dep_val = getattr(args, dep_dest)
-        if dep_val is not None:
-            warnings.warn(
-                f"{old_flag} is deprecated and will be removed in a future release; "
-                f"use {new_flag} instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            if getattr(args, new_dest) is None:
-                setattr(args, new_dest, dep_val)
 
     # Mutual exclusion: single-entry vs batch
     if args.pubchem_cid and args.pub_in:
@@ -125,16 +155,16 @@ def main(argv: list[str] | None = None) -> None:
     Batch mode — PubChem:
 
     >>> from harmonsmile._cli import main
-    >>> main(["--pubchem-in", "data/db.csv", "--pubchem-out", "results/out.csv"])
+    >>> main(["--pubchem-in", "examples/example_pubchem.csv", "--pubchem-out", "results/pubchem_out.csv"])
 
     Batch mode — ChEMBL:
 
-    >>> main(["--chembl-in", "data/db.csv", "--chembl-out", "results/out.csv"])
+    >>> main(["--chembl-in", "examples/example_chembl.csv", "--chembl-out", "results/chembl_out.csv"])
 
     Batch mode — SMILES:
 
-    >>> main(["--smiles-in", "data/db.csv", "--smiles-col", "SMILES",
-    ...       "--smiles-out", "results/out.csv"])
+    >>> main(["--smiles-in", "examples/example_smiles.csv", "--smiles-col", "SMILES",
+    ...       "--smiles-out", "results/smiles_out.csv"])
 
     Single Entry — PubChem CID:
 
@@ -202,8 +232,4 @@ def main(argv: list[str] | None = None) -> None:
         ran_any = True
 
     if not ran_any:
-        raise SystemExit(
-            "Nothing to run. Provide --pubchem-*, --chembl-*, --smiles-*, "
-            "or single-entry (--pubchem-cid / --chembl-id) arguments.\n"
-            "Run 'harmonsmile --help' for usage."
-        )
+        raise SystemExit(_NOTHING_TO_RUN)

@@ -39,6 +39,27 @@ class TestSanitizeCid:
         """String with mixed characters extracts only digits."""
         assert _sanitize_cid("CID12345") == "12345"
 
+    # --- v0.1.3 ---
+
+    def test_bool_true_does_not_raise(self):
+        """bool True does not raise — returns None or a string safely."""
+        result = _sanitize_cid(True)
+        assert result is None or isinstance(result, str)
+
+    def test_bool_false_does_not_raise(self):
+        """bool False does not raise — returns None or a string safely."""
+        result = _sanitize_cid(False)
+        assert result is None or isinstance(result, str)
+
+    def test_list_does_not_raise(self):
+        """list input does not raise — returns None."""
+        assert _sanitize_cid([1, 2, 3]) is None
+
+    def test_dict_does_not_raise(self):
+        """dict input does not raise — returns None or a string safely."""
+        result = _sanitize_cid({"cid": 123})
+        assert result is None or isinstance(result, str)
+
 
 class TestLoadTable:
     """Tests for load_table."""
@@ -100,6 +121,25 @@ class TestLoadTable:
         try:
             df = load_table(path)
             assert df["PubChem CID"].iloc[0] == "2723949"
+        finally:
+            os.unlink(path)
+
+    # --- v0.1.3 ---
+
+    def test_nonexistent_file_raises_file_not_found(self):
+        """Non-existent file raises FileNotFoundError with path in message."""
+        with pytest.raises(FileNotFoundError, match="not found"):
+            load_table("this_file_does_not_exist_xyz.csv")
+
+    def test_empty_file_raises_value_error(self):
+        """CSV with only a header (zero rows) raises ValueError."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv",
+                                         delete=False, encoding="utf-8") as f:
+            f.write("id,SMILES\n")
+            path = f.name
+        try:
+            with pytest.raises(ValueError, match="zero rows"):
+                load_table(path)
         finally:
             os.unlink(path)
 

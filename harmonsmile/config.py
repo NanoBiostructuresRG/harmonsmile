@@ -26,15 +26,29 @@ class Config:
     Parameters
     ----------
     input_path : str
-        Path to the input file (CSV, TSV, XLSX).
+        Path to the input file (CSV, TSV, XLSX). Must not contain path
+        traversal patterns ('..').
     output_path : str
-        Path to the output CSV file.
+        Path to the output CSV file. Must not contain path traversal
+        patterns ('..').
     error_log : str, optional
         Path to the error log file. Defaults to 'logs/errors.txt'.
     cid_col : str, optional
-        Name of the PubChem CID column. Defaults to 'PubChem CID'.
+        Name of the PubChem CID column. Must not be empty.
+        Defaults to 'PubChem CID'.
     props : tuple of str, optional
         PubChem properties to fetch. Defaults to all available properties.
+
+    Raises
+    ------
+    ValueError
+        If ``input_path`` is empty or contains '..'.
+    ValueError
+        If ``output_path`` is empty or contains '..'.
+    ValueError
+        If ``cid_col`` is an empty string.
+    ValueError
+        If ``props`` is empty or contains invalid property names.
     """
 
     input_path: str
@@ -49,10 +63,14 @@ class Config:
     def __post_init__(self) -> None:
         if not self.input_path:
             raise ValueError("input_path must not be empty.")
+        if ".." in self.input_path:
+            raise ValueError("input_path must not contain path traversal patterns ('..').")
         if not self.output_path:
             raise ValueError("output_path must not be empty.")
         if ".." in self.output_path:
             raise ValueError("output_path must not contain path traversal patterns ('..').")
+        if not self.cid_col or not self.cid_col.strip():
+            raise ValueError("cid_col must not be empty.")
         if not self.props:
             raise ValueError("props must contain at least one PubChem property.")
         invalid = {p for p in self.props if p not in VALID_PUBCHEM_PROPS}

@@ -1,20 +1,30 @@
 # HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.1.2-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![Version](https://img.shields.io/badge/version-v0.1.3-blue.svg)](https://pypi.org/project/harmonsmile/)
 [![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 
 ---
 
-HARMONSMILE solves a common problem in cheminformatics: SMILES strings for the same
+## Description
+
+**HARMONSMILE** solves a common problem in cheminformatics: SMILES strings for the same
 molecule look different depending on the source (PubChem, ChEMBL, COCONUT, in-house
 databases). This inconsistency breaks comparisons, deduplication, and machine learning
 pipelines that expect a uniform molecular representation.
 
-HARMONSMILE converts any SMILES to a single canonical form — **canonical + isomeric +
-Kekulized** — following the convention used by RDKit, making your
-datasets consistent and reproducible across sources.
+---
+
+## Purpose
+
+The primary objective of **HARMONSMILE** is to automate the preparation of molecular datasets for cheminformatics workflows and **phase 1** machine learning applications within the computational drug discovery pipeline. 
+
+The platform enables:
+
+- **Data Harmonization**: Standardizes SMILES strings to a consistent format — **canonical + isomeric +
+Kekulized** — ensuring that the same molecule is represented identically across different datasets and sources. It follos the RDKit convention for canonicalization, which is widely adopted in the cheminformatics community.
+
 
 ---
 
@@ -81,16 +91,16 @@ SMILESPrep(
 
 ```bash
 # PubChem pipeline
-harmonsmile --pubchem-in data/database1.csv --pubchem-out results/database1_harmonized.csv
+harmonsmile --pubchem-in examples/database1.csv --pubchem-out results/database1_harmonized.csv
 
 # SMILES pipeline (COCONUT, independent, etc.)
-harmonsmile --smiles-in data/database2.csv --smiles-col canonical_smiles \
+harmonsmile --smiles-in examples/database2.csv --smiles-col canonical_smiles \
             --smiles-out results/database2_harmonized.csv
 
 # Both pipelines in one run
 harmonsmile \
-  --pubchem-in data/database1.csv --pubchem-out results/database1_harmonized.csv \
-  --smiles-in  data/database2.csv --smiles-col  canonical_smiles \
+  --pubchem-in examples/database1.csv --pubchem-out results/database1_harmonized.csv \
+  --smiles-in  examples/database2.csv --smiles-col  canonical_smiles \
   --smiles-out results/database2_harmonized.csv
 
 # Single Entry — fetch one compound by ID
@@ -104,7 +114,7 @@ harmonsmile --version
 Also available as a Python module:
 
 ```bash
-python -m harmonsmile --pubchem-in data/database1.csv --pubchem-out results/out.csv
+python -m harmonsmile --pubchem-in examples/database1.csv --pubchem-out results/out.csv
 ```
 
 ---
@@ -159,7 +169,7 @@ HARMONSMILE/
 │   ├── pubchem.py         # PubChem REST client
 │   ├── standardize.py     # RDKitStandardizer
 │   └── version.py         # Package version metadata
-├── tests/                 # Unit test suite (pytest) — 109 tests
+├── tests/                 # Unit test suite (pytest) — 119 tests
 ├── examples/              # Example scripts and datasets
 ├── results/               # Output data (not installed)
 ├── logs/                  # Error logs (not installed)
@@ -177,8 +187,7 @@ HARMONSMILE/
 ### Running Tests
 
 ```bash
-pip install pytest
-pytest -v
+python -m pytest tests -p no:cacheprovider --basetemp .pytest_tmp
 ```
 
 ### Contributing
@@ -196,7 +205,7 @@ If you use HARMONSMILE in your research, please cite it using the metadata in
 
 ```
 Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for
-Cheminformatics and Machine Learning (v0.1.2). Tecnologico de Monterrey.
+Cheminformatics and Machine Learning (v0.1.3). Tecnologico de Monterrey.
 https://github.com/NanoBiostructuresRG/harmonsmile
 ```
 

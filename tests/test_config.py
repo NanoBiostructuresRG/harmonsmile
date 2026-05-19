@@ -55,3 +55,20 @@ class TestConfig:
         """Empty props tuple raises ValueError."""
         with pytest.raises(ValueError, match="props"):
             Config(input_path="data/in.csv", output_path="results/out.csv", props=())
+
+    # --- v0.1.3 ---
+
+    def test_input_path_traversal_raises(self):
+        """input_path with '..' raises ValueError."""
+        with pytest.raises(ValueError, match="traversal"):
+            Config(input_path="../../etc/passwd", output_path="results/out.csv")
+
+    def test_empty_cid_col_raises(self):
+        """Empty cid_col raises ValueError."""
+        with pytest.raises(ValueError, match="cid_col"):
+            Config(input_path="data/in.csv", output_path="results/out.csv", cid_col="")
+
+    def test_whitespace_cid_col_raises(self):
+        """Whitespace-only cid_col raises ValueError."""
+        with pytest.raises(ValueError, match="cid_col"):
+            Config(input_path="data/in.csv", output_path="results/out.csv", cid_col="   ")
