@@ -1,0 +1,5 @@
+id,ChEMBL ID,name,molecule_type,max_phase
+1,CHEMBL294199,CAPSAICIN,Small molecule,4.0
+2,CHEMBL313971,ZUCAPSAICIN,Small molecule,3.0
+3,CHEMBL99504,,Small molecule,
+4,CHEMBL2108237,CAPSICUM OLEORESIN,Unknown,2.0

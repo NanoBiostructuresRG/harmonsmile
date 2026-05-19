@@ -1,7 +1,7 @@
 # HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![Version](https://img.shields.io/badge/version-v0.1.2-blue.svg)](https://pypi.org/project/harmonsmile/)
 [![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 
@@ -13,7 +13,7 @@ databases). This inconsistency breaks comparisons, deduplication, and machine le
 pipelines that expect a uniform molecular representation.
 
 HARMONSMILE converts any SMILES to a single canonical form — **canonical + isomeric +
-Kekulized** — following the convention used by RDKit and COCONUT 2.0, making your
+Kekulized** — following the convention used by RDKit, making your
 datasets consistent and reproducible across sources.
 
 ---
@@ -48,8 +48,8 @@ Fetch properties from PubChem and harmonize:
 from harmonsmile import PubChemIngest, Config
 
 cfg = Config(
-    input_path="data/database_pubchem.csv",   # requires: id, PubChem CID
-    output_path="results/pubchem_harmonized.csv",
+    input_path="examples/example_pubchem.csv",   # requires: id, PubChem CID
+    output_path="results/example_pubchem_harmonized.csv",
 )
 PubChemIngest(cfg).run()
 ```
@@ -60,8 +60,8 @@ Fetch properties from ChEMBL and harmonize:
 from harmonsmile import ChEMBLIngest
 
 ChEMBLIngest(
-    input_path="data/database_chembl.csv",    # requires: id, ChEMBL ID
-    output_path="results/chembl_harmonized.csv",
+    input_path="examples/example_chembl.csv",    # requires: id, ChEMBL ID
+    output_path="results/example_chembl_harmonized.csv",
 ).run()
 ```
 
@@ -71,9 +71,9 @@ Harmonize any file with a SMILES column (COCONUT, in-house, etc.):
 from harmonsmile import SMILESPrep
 
 SMILESPrep(
-    input_path="data/database.csv",
-    smiles_col="canonical_smiles",            # any column name
-    output_path="results/harmonized.csv",
+    input_path="examples/example_smiles.txt",
+    smiles_col="SMILES",                      # any column name
+    output_path="results/example_smiles_harmonized.csv",
 ).run()
 ```
 
@@ -84,14 +84,18 @@ SMILESPrep(
 harmonsmile --pubchem-in data/database1.csv --pubchem-out results/database1_harmonized.csv
 
 # SMILES pipeline (COCONUT, independent, etc.)
-harmonsmile --coconut-in data/database2.csv --coconut-smiles canonical_smiles \
-            --coconut-out results/database2_harmonized.csv
+harmonsmile --smiles-in data/database2.csv --smiles-col canonical_smiles \
+            --smiles-out results/database2_harmonized.csv
 
 # Both pipelines in one run
 harmonsmile \
-  --pubchem-in  data/database1.csv --pubchem-out  results/database1_harmonized.csv \
-  --coconut-in  data/database2.csv --coconut-smiles canonical_smiles \
-  --coconut-out results/database2_harmonized.csv
+  --pubchem-in data/database1.csv --pubchem-out results/database1_harmonized.csv \
+  --smiles-in  data/database2.csv --smiles-col  canonical_smiles \
+  --smiles-out results/database2_harmonized.csv
+
+# Single Entry — fetch one compound by ID
+harmonsmile --pubchem-cid 2723949
+harmonsmile --chembl-id CHEMBL294199
 
 # Check version
 harmonsmile --version
@@ -155,8 +159,8 @@ HARMONSMILE/
 │   ├── pubchem.py         # PubChem REST client
 │   ├── standardize.py     # RDKitStandardizer
 │   └── version.py         # Package version metadata
-├── tests/                 # Unit test suite (pytest) — 71 tests
-├── data/                  # Input data (not installed)
+├── tests/                 # Unit test suite (pytest) — 109 tests
+├── examples/              # Example scripts and datasets
 ├── results/               # Output data (not installed)
 ├── logs/                  # Error logs (not installed)
 ├── pyproject.toml
@@ -192,7 +196,7 @@ If you use HARMONSMILE in your research, please cite it using the metadata in
 
 ```
 Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for
-Cheminformatics and Machine Learning (v0.1.0). Tecnologico de Monterrey.
+Cheminformatics and Machine Learning (v0.1.2). Tecnologico de Monterrey.
 https://github.com/NanoBiostructuresRG/harmonsmile
 ```
 
