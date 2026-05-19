@@ -8,7 +8,6 @@ Coverage
 _parse()
     - Batch mode: PubChem, ChEMBL, SMILES
     - Single Entry mode: --pubchem-cid, --chembl-id
-    - Deprecated --coconut-* aliases (migration + DeprecationWarning)
     - Mutual exclusion: --pubchem-cid vs --pubchem-in
     - Mutual exclusion: --chembl-id vs --chembl-in
     - Paired-arg validation: pubchem, chembl, smiles
@@ -27,7 +26,6 @@ main()
 from __future__ import annotations
 
 import os
-import warnings
 from unittest.mock import MagicMock, patch, call
 
 import pandas as pd
@@ -153,61 +151,6 @@ class TestParseSingleEntry:
                 "--chembl-in", "in.csv",
                 "--chembl-out", "out.csv",
             ))
-
-
-# ===========================================================================
-# _parse() — Deprecated --coconut-* aliases
-# ===========================================================================
-
-
-class TestParseDeprecatedCoconutAliases:
-    def test_coconut_in_migrates_to_smiles_in(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            args = _parse(_argv(
-                "--coconut-in", "in.csv",
-                "--coconut-out", "out.csv",
-                "--coconut-smiles", "SMILES",
-            ))
-        assert args.smiles_in == "in.csv"
-        assert args.smiles_out == "out.csv"
-        assert args.smiles_col == "SMILES"
-
-    def test_coconut_aliases_emit_deprecation_warnings(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            _parse(_argv(
-                "--coconut-in", "in.csv",
-                "--coconut-out", "out.csv",
-                "--coconut-smiles", "SMILES",
-            ))
-        dep_warnings = [w for w in caught if issubclass(w.category, DeprecationWarning)]
-        assert len(dep_warnings) == 3  # one per deprecated flag
-
-    def test_coconut_warning_mentions_new_flag(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            _parse(_argv(
-                "--coconut-in", "in.csv",
-                "--coconut-out", "out.csv",
-                "--coconut-smiles", "SMILES",
-            ))
-        messages = [str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)]
-        assert any("--smiles-in" in m for m in messages)
-        assert any("--smiles-out" in m for m in messages)
-        assert any("--smiles-col" in m for m in messages)
-
-    def test_explicit_smiles_flag_takes_precedence_over_coconut(self):
-        """If --smiles-in is already set, --coconut-in must not overwrite it."""
-        with warnings.catch_warnings(record=True):
-            warnings.simplefilter("always")
-            args = _parse(_argv(
-                "--smiles-in", "explicit.csv",
-                "--smiles-out", "out.csv",
-                "--smiles-col", "SMILES",
-                "--coconut-in", "deprecated.csv",
-            ))
-        assert args.smiles_in == "explicit.csv"
 
 
 # ===========================================================================
