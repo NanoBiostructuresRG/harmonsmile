@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
-"""Unit tests for harmonsmile.pipelines — introduced in v0.1.3."""
+"""Unit tests for harmonsmile.pipelines."""
 
 import logging
 import os
@@ -7,9 +7,9 @@ import tempfile
 
 import pandas as pd
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from harmonsmile import Config
+from harmonsmile import PubChemConfig, ChEMBLConfig, SMILESConfig
 from harmonsmile.pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 
 
@@ -42,7 +42,7 @@ class TestPubChemIngestEmptyDataFrame:
         """Zero-row input file raises ValueError before any API call."""
         path = _empty_csv(["id", "PubChem CID"])
         out = path.replace(".csv", "_out.csv")
-        cfg = Config(input_path=path, output_path=out)
+        cfg = PubChemConfig(input_path=path, output_path=out)
         mock_client = MagicMock()
         try:
             with pytest.raises(ValueError, match="zero rows"):
@@ -59,10 +59,10 @@ class TestPubChemIngestMissingSmiles:
         """If SMILES is not in fetched properties, a logger.warning is emitted."""
         path = _write_csv("id,PubChem CID\n1,702\n")
         out = path.replace(".csv", "_out.csv")
-        cfg = Config(
+        cfg = PubChemConfig(
             input_path=path,
             output_path=out,
-            props=("MolecularWeight",),   # SMILES intentionally excluded
+            props=("MolecularWeight",),
         )
         mock_client = MagicMock()
         mock_client.fetch_props.return_value = {"MolecularWeight": "46.07"}
@@ -91,14 +91,11 @@ class TestChEMBLIngestEmptyDataFrame:
         """Zero-row input file raises ValueError before any API call."""
         path = _empty_csv(["id", "ChEMBL ID"])
         out = path.replace(".csv", "_out.csv")
+        cfg = ChEMBLConfig(input_path=path, output_path=out)
         mock_client = MagicMock()
         try:
             with pytest.raises(ValueError, match="zero rows"):
-                ChEMBLIngest(
-                    input_path=path,
-                    output_path=out,
-                    client=mock_client,
-                ).run()
+                ChEMBLIngest(cfg, client=mock_client).run()
             mock_client.fetch_props.assert_not_called()
         finally:
             os.unlink(path)
@@ -115,15 +112,11 @@ class TestSMILESPrepEmptyDataFrame:
         """Zero-row input file raises ValueError before processing."""
         path = _empty_csv(["id", "SMILES"])
         out = path.replace(".csv", "_out.csv")
+        cfg = SMILESConfig(input_path=path, smiles_col="SMILES", output_path=out)
         mock_std = MagicMock()
         try:
             with pytest.raises(ValueError, match="zero rows"):
-                SMILESPrep(
-                    input_path=path,
-                    smiles_col="SMILES",
-                    output_path=out,
-                    std=mock_std,
-                ).run()
+                SMILESPrep(cfg, std=mock_std).run()
             mock_std.to_iso_kek.assert_not_called()
         finally:
             os.unlink(path)
@@ -133,13 +126,10 @@ class TestSMILESPrepEmptyDataFrame:
         path = _empty_csv(["id", "SMILES"])
         with tempfile.TemporaryDirectory() as tmpdir:
             out = os.path.join(tmpdir, "new_subdir", "out.csv")
+            cfg = SMILESConfig(input_path=path, smiles_col="SMILES", output_path=out)
             try:
                 with pytest.raises(ValueError):
-                    SMILESPrep(
-                        input_path=path,
-                        smiles_col="SMILES",
-                        output_path=out,
-                    ).run()
+                    SMILESPrep(cfg).run()
                 assert not os.path.exists(os.path.dirname(out)), (
                     "Output directory must not be created when input is empty."
                 )

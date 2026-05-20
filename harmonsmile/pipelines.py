@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
-Harmonization pipelines for PubChem and others databases.
+Harmonization pipelines for PubChem and other databases.
 
 Provides :class:`PubChemIngest` for fetching and standardizing PubChem
-compound data, and :class:`SMILESPrep` for harmonizing SMILES from
-COCONUT or independent molecular databases.
+compound data, :class:`ChEMBLIngest` for ChEMBL compound data, and
+:class:`SMILESPrep` for harmonizing SMILES from any tabular source.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import os
 
 import pandas as pd
 
-from .config import Config
+from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
 from .io import load_table, save_table
 from .chembl import _ChEMBLClient
 from .pubchem import _PubChemClient
@@ -31,7 +31,7 @@ class PubChemIngest:
 
     Parameters
     ----------
-    cfg : Config
+    cfg : PubChemConfig
         Pipeline configuration.
     client : _PubChemClient, optional
         PubChem API client. Created automatically if not provided.
@@ -40,8 +40,8 @@ class PubChemIngest:
 
     Examples
     --------
-    >>> from harmonsmile import PubChemIngest, Config
-    >>> cfg = Config(
+    >>> from harmonsmile import PubChemIngest, PubChemConfig
+    >>> cfg = PubChemConfig(
     ...     input_path="examples/example_pubchem.csv",
     ...     output_path="results/pubchem_harmonized.csv",
     ... )
@@ -50,7 +50,7 @@ class PubChemIngest:
 
     def __init__(
         self,
-        cfg: Config,
+        cfg: PubChemConfig,
         client: _PubChemClient | None = None,
         std: RDKitStandardizer | None = None,
     ) -> None:
@@ -103,7 +103,7 @@ class PubChemIngest:
             logger.warning(
                 "[PubChemIngest] 'SMILES' column not found after fetching properties "
                 "— SMILES_RDKit will not be generated. "
-                "Ensure 'SMILES' is included in Config.props."
+                "Ensure 'SMILES' is included in PubChemConfig.props."
             )
 
         if "MolecularWeight" in out.columns:
@@ -161,12 +161,8 @@ class ChEMBLIngest:
 
     Parameters
     ----------
-    input_path : str or os.PathLike
-        Path to the input file (CSV, TSV, XLSX).
-    output_path : str or os.PathLike
-        Path to the output CSV file.
-    chembl_id_col : str, optional
-        Name of the ChEMBL ID column in the input file. Defaults to 'ChEMBL ID'.
+    cfg : ChEMBLConfig
+        Pipeline configuration.
     client : _ChEMBLClient or None, optional
         ChEMBL API client. Created automatically if not provided.
     std : RDKitStandardizer or None, optional
@@ -174,24 +170,21 @@ class ChEMBLIngest:
 
     Examples
     --------
-    >>> from harmonsmile import ChEMBLIngest
-    >>> df = ChEMBLIngest(
+    >>> from harmonsmile import ChEMBLIngest, ChEMBLConfig
+    >>> cfg = ChEMBLConfig(
     ...     input_path="examples/example_chembl.csv",
     ...     output_path="results/chembl_harmonized.csv",
-    ... ).run()
+    ... )
+    >>> df = ChEMBLIngest(cfg).run()
     """
 
     def __init__(
         self,
-        input_path: str | os.PathLike,
-        output_path: str | os.PathLike,
-        chembl_id_col: str = "ChEMBL ID",
+        cfg: ChEMBLConfig,
         client: _ChEMBLClient | None = None,
         std: RDKitStandardizer | None = None,
     ) -> None:
-        self.input_path    = input_path
-        self.output_path   = output_path
-        self.chembl_id_col = chembl_id_col
+        self.cfg = cfg
         self.client = client or _ChEMBLClient(
             logger=lambda m: logger.warning(m)
         )
@@ -214,20 +207,20 @@ class ChEMBLIngest:
         ValueError
             If the input file has zero rows.
         """
-        df = load_table(self.input_path)
+        df = load_table(self.cfg.input_path)
 
         if df.empty:
             raise ValueError(
-                f"Input file has zero rows: {self.input_path}"
+                f"Input file has zero rows: {self.cfg.input_path}"
             )
 
-        if self.chembl_id_col not in df.columns:
+        if self.cfg.chembl_id_col not in df.columns:
             raise ValueError(
-                f"ChEMBL ID column '{self.chembl_id_col}' not found. "
+                f"ChEMBL ID column '{self.cfg.chembl_id_col}' not found. "
                 f"Available columns: {list(df.columns)}"
             )
 
-        props = df[self.chembl_id_col].apply(self.client.fetch_props)
+        props = df[self.cfg.chembl_id_col].apply(self.client.fetch_props)
         props_df = pd.DataFrame(list(props))
 
         # Drop the API's molecule_chembl_id; the input column already holds the ID
@@ -265,53 +258,46 @@ class ChEMBLIngest:
                 out[col] = pd.to_numeric(out[col], errors="coerce")
 
         out = out[present + others]
-        save_table(out, self.output_path)
+        save_table(out, self.cfg.output_path)
 
         n    = len(out)
         n_rd = out["SMILES_RDKit"].notna().sum() if "SMILES_RDKit" in out.columns else 0
-        logger.info("[OK] %s | RDKit: %s/%s", self.output_path, n_rd, n)
+        logger.info("[OK] %s | RDKit: %s/%s", self.cfg.output_path, n_rd, n)
         return out
 
 
 class SMILESPrep:
     """
-    Pipeline for harmonizing SMILES from COCONUT or independent databases.
+    Pipeline for harmonizing SMILES from any tabular source.
 
     Reads a tabular file, applies RDKit canonicalization to the specified
     SMILES column, and saves the result with an appended SMILES_RDKit column.
 
     Parameters
     ----------
-    input_path : str or os.PathLike
-        Path to the input file.
-    smiles_col : str
-        Name of the column containing SMILES strings.
-    output_path : str or os.PathLike
-        Path to the output CSV file.
+    cfg : SMILESConfig
+        Pipeline configuration.
     std : RDKitStandardizer, optional
         SMILES standardizer. Created automatically if not provided.
 
     Examples
     --------
-    >>> from harmonsmile import SMILESPrep
-    >>> df = SMILESPrep(
+    >>> from harmonsmile import SMILESPrep, SMILESConfig
+    >>> cfg = SMILESConfig(
     ...     input_path="examples/example_smiles.csv",
     ...     smiles_col="SMILES",
-    ...     output_path="results/ecxample_harmonized.csv",
-    ... ).run()
+    ...     output_path="results/smiles_harmonized.csv",
+    ... )
+    >>> df = SMILESPrep(cfg).run()
     """
 
     def __init__(
         self,
-        input_path: str | os.PathLike,
-        smiles_col: str,
-        output_path: str | os.PathLike,
+        cfg: SMILESConfig,
         std: RDKitStandardizer | None = None,
     ) -> None:
-        self.input_path  = input_path
-        self.smiles_col  = smiles_col
-        self.output_path = output_path
-        self.std         = std or RDKitStandardizer()
+        self.cfg = cfg
+        self.std = std or RDKitStandardizer()
 
     def run(self) -> pd.DataFrame:
         """
@@ -329,22 +315,22 @@ class SMILESPrep:
         ValueError
             If the input file has zero rows.
         """
-        df = load_table(self.input_path)
+        df = load_table(self.cfg.input_path)
 
         if df.empty:
             raise ValueError(
-                f"Input file has zero rows: {self.input_path}"
+                f"Input file has zero rows: {self.cfg.input_path}"
             )
 
-        if self.smiles_col not in df.columns:
+        if self.cfg.smiles_col not in df.columns:
             raise ValueError(
-                f"Column '{self.smiles_col}' not found. "
+                f"Column '{self.cfg.smiles_col}' not found. "
                 f"Available columns: {list(df.columns)}"
             )
 
-        df["SMILES_RDKit"] = df[self.smiles_col].apply(self.std.to_iso_kek)
-        save_table(df, self.output_path)
+        df["SMILES_RDKit"] = df[self.cfg.smiles_col].apply(self.std.to_iso_kek)
+        save_table(df, self.cfg.output_path)
 
         n, n_ok = len(df), df["SMILES_RDKit"].notna().sum()
-        logger.info("[OK] %s | RDKit: %s/%s", self.output_path, n_ok, n)
+        logger.info("[OK] %s | RDKit: %s/%s", self.cfg.output_path, n_ok, n)
         return df
