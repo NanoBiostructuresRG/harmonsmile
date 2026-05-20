@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
-Configuration dataclass for harmonsmile pipelines.
+Configuration dataclasses for harmonsmile pipelines.
 
-Defines the immutable :class:`Config` object used by
-:class:`~harmonsmile.pipelines.PubChemIngest` to parameterize
-input/output paths, PubChem column names, and properties to fetch.
+Defines immutable configuration objects for each pipeline:
+:class:`PubChemConfig` for :class:`~harmonsmile.pipelines.PubChemIngest`,
+:class:`ChEMBLConfig` for :class:`~harmonsmile.pipelines.ChEMBLIngest`, and
+:class:`SMILESConfig` for :class:`~harmonsmile.pipelines.SMILESPrep`.
 """
 
 from __future__ import annotations
@@ -19,25 +20,26 @@ VALID_PUBCHEM_PROPS: frozenset[str] = frozenset({
 
 
 @dataclass(frozen=True)
-class Config:
+class PubChemConfig:
     """
-    Immutable configuration for harmonsmile pipelines.
+    Immutable configuration for :class:`~harmonsmile.pipelines.PubChemIngest`.
 
     Parameters
     ----------
     input_path : str
-        Path to the input file (CSV, TSV, XLSX). Must not contain path
-        traversal patterns ('..').
+        Path to the input file (CSV, TSV, XLSX). Must not be empty or
+        contain path traversal patterns ('..').
     output_path : str
-        Path to the output CSV file. Must not contain path traversal
-        patterns ('..').
+        Path to the output CSV file. Must not be empty or contain path
+        traversal patterns ('..').
     error_log : str, optional
         Path to the error log file. Defaults to 'logs/errors.txt'.
     cid_col : str, optional
-        Name of the PubChem CID column. Must not be empty.
-        Defaults to 'PubChem CID'.
+        Name of the PubChem CID column. Must not be empty or
+        whitespace-only. Defaults to 'PubChem CID'.
     props : tuple of str, optional
-        PubChem properties to fetch. Defaults to all available properties.
+        PubChem properties to fetch. Must contain at least one valid
+        property name. Defaults to all available properties.
 
     Raises
     ------
@@ -46,19 +48,29 @@ class Config:
     ValueError
         If ``output_path`` is empty or contains '..'.
     ValueError
-        If ``cid_col`` is an empty string.
+        If ``cid_col`` is empty or whitespace-only.
     ValueError
         If ``props`` is empty or contains invalid property names.
+
+    Examples
+    --------
+    >>> from harmonsmile import PubChemConfig
+    >>> cfg = PubChemConfig(
+    ...     input_path="examples/example_pubchem.csv",
+    ...     output_path="results/pubchem_harmonized.csv",
+    ... )
     """
 
     input_path: str
     output_path: str
     error_log: str = "logs/errors.txt"
     cid_col: str = "PubChem CID"
-    props: tuple[str, ...] = ("SMILES", "ConnectivitySMILES", "MolecularFormula",
-    "MolecularWeight", "InChI", "InChIKey", "XLogP", "TPSA",
-    "Charge", "HBondDonorCount", "HBondAcceptorCount",
-    "RotatableBondCount", "HeavyAtomCount",)
+    props: tuple[str, ...] = (
+        "SMILES", "ConnectivitySMILES", "MolecularFormula",
+        "MolecularWeight", "InChI", "InChIKey", "XLogP", "TPSA",
+        "Charge", "HBondDonorCount", "HBondAcceptorCount",
+        "RotatableBondCount", "HeavyAtomCount",
+    )
 
     def __post_init__(self) -> None:
         if not self.input_path:
@@ -76,3 +88,114 @@ class Config:
         invalid = {p for p in self.props if p not in VALID_PUBCHEM_PROPS}
         if invalid:
             raise ValueError(f"Invalid PubChem properties: {sorted(invalid)}")
+
+
+@dataclass(frozen=True)
+class ChEMBLConfig:
+    """
+    Immutable configuration for :class:`~harmonsmile.pipelines.ChEMBLIngest`.
+
+    Parameters
+    ----------
+    input_path : str
+        Path to the input file (CSV, TSV, XLSX). Must not be empty or
+        contain path traversal patterns ('..').
+    output_path : str
+        Path to the output CSV file. Must not be empty or contain path
+        traversal patterns ('..').
+    chembl_id_col : str, optional
+        Name of the ChEMBL ID column in the input file. Must not be
+        empty or whitespace-only. Defaults to 'ChEMBL ID'.
+    error_log : str, optional
+        Path to the error log file. Defaults to 'logs/errors.txt'.
+
+    Raises
+    ------
+    ValueError
+        If ``input_path`` is empty or contains '..'.
+    ValueError
+        If ``output_path`` is empty or contains '..'.
+    ValueError
+        If ``chembl_id_col`` is empty or whitespace-only.
+
+    Examples
+    --------
+    >>> from harmonsmile import ChEMBLConfig
+    >>> cfg = ChEMBLConfig(
+    ...     input_path="examples/example_chembl.csv",
+    ...     output_path="results/chembl_harmonized.csv",
+    ... )
+    """
+
+    input_path: str
+    output_path: str
+    chembl_id_col: str = "ChEMBL ID"
+    error_log: str = "logs/errors.txt"
+
+    def __post_init__(self) -> None:
+        if not self.input_path:
+            raise ValueError("input_path must not be empty.")
+        if ".." in self.input_path:
+            raise ValueError("input_path must not contain path traversal patterns ('..').")
+        if not self.output_path:
+            raise ValueError("output_path must not be empty.")
+        if ".." in self.output_path:
+            raise ValueError("output_path must not contain path traversal patterns ('..').")
+        if not self.chembl_id_col or not self.chembl_id_col.strip():
+            raise ValueError("chembl_id_col must not be empty.")
+
+
+@dataclass(frozen=True)
+class SMILESConfig:
+    """
+    Immutable configuration for :class:`~harmonsmile.pipelines.SMILESPrep`.
+
+    Parameters
+    ----------
+    input_path : str
+        Path to the input file (CSV, TSV, XLSX). Must not be empty or
+        contain path traversal patterns ('..').
+    output_path : str
+        Path to the output CSV file. Must not be empty or contain path
+        traversal patterns ('..').
+    smiles_col : str
+        Name of the column containing SMILES strings. Must not be
+        empty or whitespace-only.
+    error_log : str, optional
+        Path to the error log file. Defaults to 'logs/errors.txt'.
+
+    Raises
+    ------
+    ValueError
+        If ``input_path`` is empty or contains '..'.
+    ValueError
+        If ``output_path`` is empty or contains '..'.
+    ValueError
+        If ``smiles_col`` is empty or whitespace-only.
+
+    Examples
+    --------
+    >>> from harmonsmile import SMILESConfig
+    >>> cfg = SMILESConfig(
+    ...     input_path="examples/example_smiles.csv",
+    ...     smiles_col="SMILES",
+    ...     output_path="results/smiles_harmonized.csv",
+    ... )
+    """
+
+    input_path: str
+    output_path: str
+    smiles_col: str
+    error_log: str = "logs/errors.txt"
+
+    def __post_init__(self) -> None:
+        if not self.input_path:
+            raise ValueError("input_path must not be empty.")
+        if ".." in self.input_path:
+            raise ValueError("input_path must not contain path traversal patterns ('..').")
+        if not self.output_path:
+            raise ValueError("output_path must not be empty.")
+        if ".." in self.output_path:
+            raise ValueError("output_path must not contain path traversal patterns ('..').")
+        if not self.smiles_col or not self.smiles_col.strip():
+            raise ValueError("smiles_col must not be empty.")
