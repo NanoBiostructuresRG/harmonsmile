@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2026-05-20
+
+### Changed (breaking)
+- `config.py`: `Config` removed and replaced by three dedicated frozen
+  dataclasses — `PubChemConfig`, `ChEMBLConfig`, and `SMILESConfig` — one
+  per pipeline. All three share the same validation pattern (`input_path`,
+  `output_path` must not be empty or contain `..`; pipeline-specific column
+  fields must not be empty or whitespace-only).
+- `PubChemIngest.__init__`: now accepts `cfg: PubChemConfig` instead of
+  `cfg: Config`.
+- `ChEMBLIngest.__init__`: now accepts `cfg: ChEMBLConfig` instead of
+  direct `input_path`, `output_path`, and `chembl_id_col` parameters.
+- `SMILESPrep.__init__`: now accepts `cfg: SMILESConfig` instead of
+  direct `input_path`, `smiles_col`, and `output_path` parameters.
+
+### Added
+- `PubChemConfig` — exported in `__all__`, replaces `Config` for
+  `PubChemIngest`.
+- `ChEMBLConfig` — new public config dataclass for `ChEMBLIngest` with
+  `input_path`, `output_path`, `chembl_id_col`, and `error_log` fields.
+- `SMILESConfig` — new public config dataclass for `SMILESPrep` with
+  `input_path`, `output_path`, `smiles_col`, and `error_log` fields.
+
+### Docs
+- `__init__.py`: module docstring updated — classes section and all
+  examples reflect the new config classes.
+- `__main__.py`: docstring examples updated; removed stale `--coconut-*`
+  example that survived from v0.1.2.
+- `pipelines.py`: all three pipeline docstrings updated with new config
+  types and examples.
+- `API.md`: updated to v0.2.0 — `Config` removed, three new config classes
+  documented with full parameter and validation tables.
+- `README.md`: all Python API examples updated to use new config classes;
+  version badge bumped to v0.2.0.
+
+### Tests
+- `test_config.py`: `TestConfig` renamed to `TestPubChemConfig`;
+  `TestChEMBLConfig` and `TestSMILESConfig` added (10 cases each).
+- `test_pipelines.py`: all pipeline instantiation updated to use new
+  config classes.
+- `test_security.py`: `TestConfigSecurity` renamed to
+  `TestPubChemConfigSecurity`; `TestChEMBLConfigSecurity` and
+  `TestSMILESConfigSecurity` added.
+- `test_cli.py`: batch ChEMBL and SMILES tests updated to read paths
+  from config object instead of kwargs.
+- **Final count:** 146 tests passing (+27 net vs v0.1.3).
+
+### Internal
+- `_cli.py`: internal instantiation updated to use `PubChemConfig`,
+  `ChEMBLConfig`, and `SMILESConfig`.
+- `version.py`: version bumped to `0.2.0`.
+
+---
+
 ## [0.1.3] - 2026-05-19
 
 ### Changed
