@@ -26,7 +26,7 @@ main()
 from __future__ import annotations
 
 import os
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -53,7 +53,7 @@ class TestParseBatchPubChem:
         args = _parse(_argv("--pubchem-in", "in.csv", "--pubchem-out", "out.csv"))
         assert args.pub_in == "in.csv"
         assert args.pub_out == "out.csv"
-        assert args.pubchem_cidcol == "PubChem CID"  # default
+        assert args.pubchem_cidcol == "PubChem CID"
 
     def test_pubchem_batch_custom_cidcol(self):
         args = _parse(_argv(
@@ -77,7 +77,7 @@ class TestParseBatchChEMBL:
         args = _parse(_argv("--chembl-in", "in.csv", "--chembl-out", "out.csv"))
         assert args.chembl_in == "in.csv"
         assert args.chembl_out == "out.csv"
-        assert args.chembl_idcol == "ChEMBL ID"  # default
+        assert args.chembl_idcol == "ChEMBL ID"
 
     def test_chembl_batch_custom_idcol(self):
         args = _parse(_argv(
@@ -183,7 +183,7 @@ class TestMainBatchPubChem:
     def test_pubchem_batch_config_receives_paths(self, mock_pipelines):
         MockPubChem, _, _ = mock_pipelines
         main(_argv("--pubchem-in", "in.csv", "--pubchem-out", "out.csv"))
-        cfg_arg = MockPubChem.call_args[0][0]   # positional Config object
+        cfg_arg = MockPubChem.call_args[0][0]
         assert cfg_arg.input_path == "in.csv"
         assert cfg_arg.output_path == "out.csv"
 
@@ -195,12 +195,12 @@ class TestMainBatchChEMBL:
         MockChEMBL.assert_called_once()
         MockChEMBL.return_value.run.assert_called_once()
 
-    def test_chembl_batch_receives_correct_paths(self, mock_pipelines):
+    def test_chembl_batch_config_receives_paths(self, mock_pipelines):
         _, MockChEMBL, _ = mock_pipelines
         main(_argv("--chembl-in", "in.csv", "--chembl-out", "out.csv"))
-        kwargs = MockChEMBL.call_args[1]
-        assert kwargs["input_path"] == "in.csv"
-        assert kwargs["output_path"] == "out.csv"
+        cfg_arg = MockChEMBL.call_args[0][0]
+        assert cfg_arg.input_path == "in.csv"
+        assert cfg_arg.output_path == "out.csv"
 
 
 class TestMainBatchSMILES:
@@ -210,13 +210,13 @@ class TestMainBatchSMILES:
         MockSMILES.assert_called_once()
         MockSMILES.return_value.run.assert_called_once()
 
-    def test_smiles_batch_receives_correct_args(self, mock_pipelines):
+    def test_smiles_batch_config_receives_args(self, mock_pipelines):
         _, _, MockSMILES = mock_pipelines
         main(_argv("--smiles-in", "in.csv", "--smiles-col", "SMILES", "--smiles-out", "out.csv"))
-        pos_args = MockSMILES.call_args[0]
-        assert pos_args[0] == "in.csv"
-        assert pos_args[1] == "SMILES"
-        assert pos_args[2] == "out.csv"
+        cfg_arg = MockSMILES.call_args[0][0]
+        assert cfg_arg.input_path == "in.csv"
+        assert cfg_arg.smiles_col == "SMILES"
+        assert cfg_arg.output_path == "out.csv"
 
 
 # ===========================================================================
@@ -281,8 +281,8 @@ class TestMainSingleEntryChEMBL:
         _, MockChEMBL, _ = mock_pipelines
         with patch("harmonsmile._cli.os.unlink"):
             main(_argv("--chembl-id", "CHEMBL294199"))
-        kwargs = MockChEMBL.call_args[1]
-        assert kwargs["output_path"] == os.path.join("results", "CHEMBL294199_harmonsmile.csv")
+        cfg_arg = MockChEMBL.call_args[0][0]
+        assert cfg_arg.output_path == os.path.join("results", "CHEMBL294199_harmonsmile.csv")
 
     def test_chembl_id_temp_file_deleted(self, mock_pipelines):
         """os.unlink must be called on the temp file after run()."""
@@ -299,8 +299,8 @@ class TestMainSingleEntryChEMBL:
         captured_df: list[pd.DataFrame] = []
 
         def capture_on_run():
-            kwargs = MockChEMBL.call_args[1]
-            captured_df.append(pd.read_csv(kwargs["input_path"]))
+            cfg = MockChEMBL.call_args[0][0]
+            captured_df.append(pd.read_csv(cfg.input_path))
             return pd.DataFrame()
 
         MockChEMBL.return_value.run.side_effect = capture_on_run
@@ -361,4 +361,3 @@ class TestMainNoArgs:
     def test_no_args_message_mentions_flags(self, capsys):
         with pytest.raises(SystemExit):
             main(_argv())
-        # SystemExit raised with a string code — message is in the exception itself
