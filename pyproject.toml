@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "harmonsmile"
-version = "0.1.3"
-description = "Toolkit for harmonizing SMILES strings to canonical + isomeric + Kekulized convention (RDKit / COCONUT 2.0)"
+version = "0.2.0"
+description = "Toolkit for harmonizing SMILES strings to canonical + isomeric + Kekulized convention (RDKit)"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
