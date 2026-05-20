@@ -32,7 +32,7 @@ import tempfile
 
 import pandas as pd
 
-from .config import Config
+from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
 from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 
 
@@ -179,7 +179,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.pub_in and args.pub_out:
         _ensure_dirs()
-        cfg = Config(
+        cfg = PubChemConfig(
             input_path=args.pub_in,
             output_path=args.pub_out,
             cid_col=args.pubchem_cidcol,
@@ -189,16 +189,22 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.chembl_in and args.chembl_out:
         _ensure_dirs()
-        ChEMBLIngest(
+        cfg = ChEMBLConfig(
             input_path=args.chembl_in,
             output_path=args.chembl_out,
             chembl_id_col=args.chembl_idcol,
-        ).run()
+        )
+        ChEMBLIngest(cfg).run()
         ran_any = True
 
     if args.smiles_in and args.smiles_out and args.smiles_col:
         _ensure_dirs()
-        SMILESPrep(args.smiles_in, args.smiles_col, args.smiles_out).run()
+        cfg = SMILESConfig(
+            input_path=args.smiles_in,
+            smiles_col=args.smiles_col,
+            output_path=args.smiles_out,
+        )
+        SMILESPrep(cfg).run()
         ran_any = True
 
     if args.pubchem_cid:
@@ -209,7 +215,7 @@ def main(argv: list[str] | None = None) -> None:
         tmp.close()
         try:
             pd.DataFrame([{"id": 1, "PubChem CID": cid}]).to_csv(tmp.name, index=False)
-            cfg = Config(input_path=tmp.name, output_path=out_path)
+            cfg = PubChemConfig(input_path=tmp.name, output_path=out_path)
             PubChemIngest(cfg).run()
         finally:
             os.unlink(tmp.name)
@@ -223,10 +229,11 @@ def main(argv: list[str] | None = None) -> None:
         tmp.close()
         try:
             pd.DataFrame([{"id": 1, "ChEMBL ID": chembl_id}]).to_csv(tmp.name, index=False)
-            ChEMBLIngest(
+            cfg = ChEMBLConfig(
                 input_path=tmp.name,
                 output_path=out_path,
-            ).run()
+            )
+            ChEMBLIngest(cfg).run()
         finally:
             os.unlink(tmp.name)
         ran_any = True
