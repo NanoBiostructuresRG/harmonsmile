@@ -14,11 +14,23 @@ Examples
 --------
 Fetch PubChem properties and standardize SMILES::
 
-    python -m harmonsmile --pubchem-in data/db.csv --pubchem-out results/out.csv
+    python -m harmonsmile --pubchem-in examples/example_pubchem.csv --pubchem-out results/pubchem_out.csv
+
+Fetch ChEMBL properties and standardize SMILES::
+
+    python -m harmonsmile --chembl-in examples/example_chembl.csv --chembl-out results/chembl_out.csv
 
 Standardize an existing SMILES column::
 
-    python -m harmonsmile --coconut-in data/db.csv --coconut-smiles SMILES --coconut-out results/out.csv
+    python -m harmonsmile --smiles-in examples/example_smiles.csv --smiles-col SMILES --smiles-out results/smiles_out.csv
+
+Fetch a single compound by PubChem CID::
+
+    python -m harmonsmile --pubchem-cid 2723949
+
+Fetch a single compound by ChEMBL ID::
+
+    python -m harmonsmile --chembl-id CHEMBL294199
 """
 
 from harmonsmile._cli import main
