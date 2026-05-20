@@ -9,8 +9,12 @@ Classes
 -------
 RDKitStandardizer
     Standardize SMILES strings using RDKit.
-Config
-    Immutable configuration for harmonsmile pipelines.
+PubChemConfig
+    Immutable configuration for PubChemIngest.
+ChEMBLConfig
+    Immutable configuration for ChEMBLIngest.
+SMILESConfig
+    Immutable configuration for SMILESPrep.
 PubChemIngest
     Pipeline for ingesting and harmonizing PubChem compound data.
 ChEMBLIngest
@@ -36,28 +40,38 @@ Standardize a single SMILES string:
 >>> std.to_conn_kek("C[C@@H](O)F")
 'CC(O)F'
 
-Harmonize a COCONUT or independent database:
+Harmonize any file with a SMILES column:
 
->>> from harmonsmile import SMILESPrep
->>> SMILESPrep(
+>>> from harmonsmile import SMILESPrep, SMILESConfig
+>>> cfg = SMILESConfig(
 ...     input_path="examples/example_smiles.csv",
 ...     smiles_col="SMILES",
-...     output_path="results/example_harmonized.csv",
-... ).run()
+...     output_path="results/smiles_harmonized.csv",
+... )
+>>> SMILESPrep(cfg).run()
 
 Fetch and harmonize PubChem data:
 
->>> from harmonsmile import PubChemIngest, Config
->>> cfg = Config(
+>>> from harmonsmile import PubChemIngest, PubChemConfig
+>>> cfg = PubChemConfig(
 ...     input_path="examples/example_pubchem.csv",
 ...     output_path="results/pubchem_harmonized.csv",
 ... )
 >>> PubChemIngest(cfg).run()
+
+Fetch and harmonize ChEMBL data:
+
+>>> from harmonsmile import ChEMBLIngest, ChEMBLConfig
+>>> cfg = ChEMBLConfig(
+...     input_path="examples/example_chembl.csv",
+...     output_path="results/chembl_harmonized.csv",
+... )
+>>> ChEMBLIngest(cfg).run()
 """
 
 from .standardize import RDKitStandardizer
 from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
-from .config import Config
+from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
 from .pubchem import PubChemClient
 from .io import load_table, save_table
 from .version import __version__, PROJECT_NAME, PROJECT_VERSION, PROJECT_STATUS
@@ -67,13 +81,15 @@ __author__ = "Flavio F. Contreras-Torres"
 __all__ = [
     "RDKitStandardizer",
     "PubChemIngest",
+    "PubChemConfig",
     "ChEMBLIngest",
+    "ChEMBLConfig",
     "SMILESPrep",
-    "Config",
+    "SMILESConfig",
     "load_table",
     "save_table",
     "__version__",
     "PROJECT_NAME",
     "PROJECT_VERSION",
-    "PROJECT_STATUS"
+    "PROJECT_STATUS",
 ]
