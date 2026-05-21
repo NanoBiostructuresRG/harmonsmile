@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+site_name: HARMONSMILE
+site_description: Harmonize SMILES strings for cheminformatics and machine learning
+site_url: https://nanobiostructuresrg.github.io/harmonsmile/
+repo_url: https://github.com/NanoBiostructuresRG/harmonsmile
+repo_name: NanoBiostructuresRG/harmonsmile
+
+theme:
+  name: material
+  palette:
+    primary: teal
+    accent: cyan
+  features:
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+
+nav:
+  - Home: index.md
+  - API Reference: api.md
+  - Changelog: changelog.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.snippets
