@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.1] - 2026-05-20
+
+### Changed
+- `ci.yml`: Python version matrix updated to 3.11 and 3.12 (Python 3.10
+  dropped — end-of-life October 2026).
+- `ci.yml`: import boundary check replaced with explicit `assert` statements
+  for all seven key public symbols (`PubChemConfig`, `ChEMBLConfig`,
+  `SMILESConfig`, `RDKitStandardizer`, `PubChemIngest`, `ChEMBLIngest`,
+  `SMILESPrep`). Same assertions applied inside the wheel smoke install step.
+- `ci.yml`: removed redundant `setuptools>=68` and `wheel` from the install
+  step — unnecessary with `hatchling` as the build backend.
+- `ci.yml`: fixed trailing whitespace in `python -m build` line.
+
+### Added
+- `ci.yml`: new "Smoke install sdist" step — validates the `.tar.gz` source
+  distribution independently from the wheel.
+
+### Internal
+- `.vscode/` removed from Git index (was previously tracked despite being
+  listed in `.gitignore`).
+
+---
+
 ## [0.2.0] - 2026-05-20
 
 ### Changed (breaking)
@@ -232,10 +255,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Future Releases (Planned)
 
-### [0.2.0] — COCONUT source
-- Add `CoconutIngest` pipeline — knows COCONUT 2.0 schema automatically
-  (`canonical_smiles` column, `identifier`, molecular properties).
-- Optional COCONUT REST API integration (authenticated).
+### [0.2.2] — MkDocs documentation
+- MkDocs + Material theme + mkdocstrings setup.
+- Auto-generated API reference from NumPy-style docstrings.
+- Published to GitHub Pages via GitHub Actions.
 
 ### [0.3.0] — ML-ready features
 - Standardized pipeline to generate ECFP fingerprints (with/without chirality).
@@ -243,6 +266,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.2.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/NanoBiostructuresRG/harmonsmile/releases/tag/v0.1.1
