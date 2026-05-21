@@ -7,23 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.3] - 2026-05-21
+
+### Changed
+- Refined the MkDocs Material documentation landing page with a custom
+  HARMONSMILE hero, responsive styling, improved cards, footer social link,
+  and polished pipeline tables.
+- Updated `mkdocs.yml` theme settings, navigation behavior, Markdown
+  extensions, custom CSS, favicon, and footer social metadata.
+
+### Fixed
+- Removed the duplicate `Changelog` heading from the documentation changelog page.
+- Corrected documentation typography, spacing, badges, and table wrapping.
+- Excluded `docs/` and `mkdocs.yml` from the source distribution while keeping
+  them available in the repository for GitHub Pages.
+
+### Internal
+- `pyproject.toml`: version bumped to `0.2.3`.
+- `version.py`: version bumped to `0.2.3`.
+- `CITATION.cff`: version and release date updated for `0.2.3`.
+
+---
+
 ## [0.2.2] - 2026-05-21
 
 ### Added
 - MkDocs + Material theme + mkdocstrings documentation infrastructure.
-- `docs/index.md` — home page mirroring `README.md` content.
-- `docs/api.md` — auto-generated API reference from NumPy-style docstrings.
-- `docs/changelog.md` — changelog page including `CHANGELOG.md` via snippets.
-- `mkdocs.yml` — MkDocs configuration with Material theme, mkdocstrings
+- `docs/index.md` - home page mirroring `README.md` content.
+- `docs/api.md` - auto-generated API reference from NumPy-style docstrings.
+- `docs/changelog.md` - changelog page including `CHANGELOG.md` via snippets.
+- `mkdocs.yml` - MkDocs configuration with Material theme, mkdocstrings
   plugin (NumPy style), and navigation structure.
-- `.github/workflows/docs.yml` — new workflow that builds and deploys
+- `.github/workflows/docs.yml` - new workflow that builds and deploys
   documentation to GitHub Pages on every push to `main`.
 - `pyproject.toml`: new `docs` optional dependency group
   (`mkdocs-material>=9.5`, `mkdocstrings[python]>=0.25`).
 - `pyproject.toml`: `Documentation` URL added under `[project.urls]`.
 
 ### Removed
-- `API.md` — replaced by auto-generated `docs/api.md`.
+- `API.md` - replaced by auto-generated `docs/api.md`.
 
 ### Internal
 - `requirements-dev.txt`: documentation dependencies added.
@@ -35,17 +57,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `ci.yml`: Python version matrix updated to 3.11 and 3.12 (Python 3.10
-  dropped — end-of-life October 2026).
+  dropped - end-of-life October 2026).
 - `ci.yml`: import boundary check replaced with explicit `assert` statements
   for all seven key public symbols (`PubChemConfig`, `ChEMBLConfig`,
   `SMILESConfig`, `RDKitStandardizer`, `PubChemIngest`, `ChEMBLIngest`,
   `SMILESPrep`). Same assertions applied inside the wheel smoke install step.
 - `ci.yml`: removed redundant `setuptools>=68` and `wheel` from the install
-  step — unnecessary with `hatchling` as the build backend.
+  step - unnecessary with `hatchling` as the build backend.
 - `ci.yml`: fixed trailing whitespace in `python -m build` line.
 
 ### Added
-- `ci.yml`: new "Smoke install sdist" step — validates the `.tar.gz` source
+- `ci.yml`: new "Smoke install sdist" step - validates the `.tar.gz` source
   distribution independently from the wheel.
 
 ### Internal
@@ -58,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 - `config.py`: `Config` removed and replaced by three dedicated frozen
-  dataclasses — `PubChemConfig`, `ChEMBLConfig`, and `SMILESConfig` — one
+  dataclasses - `PubChemConfig`, `ChEMBLConfig`, and `SMILESConfig` - one
   per pipeline. All three share the same validation pattern (`input_path`,
   `output_path` must not be empty or contain `..`; pipeline-specific column
   fields must not be empty or whitespace-only).
@@ -70,21 +92,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   direct `input_path`, `smiles_col`, and `output_path` parameters.
 
 ### Added
-- `PubChemConfig` — exported in `__all__`, replaces `Config` for
+- `PubChemConfig` - exported in `__all__`, replaces `Config` for
   `PubChemIngest`.
-- `ChEMBLConfig` — new public config dataclass for `ChEMBLIngest` with
+- `ChEMBLConfig` - new public config dataclass for `ChEMBLIngest` with
   `input_path`, `output_path`, `chembl_id_col`, and `error_log` fields.
-- `SMILESConfig` — new public config dataclass for `SMILESPrep` with
+- `SMILESConfig` - new public config dataclass for `SMILESPrep` with
   `input_path`, `output_path`, `smiles_col`, and `error_log` fields.
 
 ### Docs
-- `__init__.py`: module docstring updated — classes section and all
+- `__init__.py`: module docstring updated - classes section and all
   examples reflect the new config classes.
 - `__main__.py`: docstring examples updated; removed stale `--coconut-*`
   example that survived from v0.1.2.
 - `pipelines.py`: all three pipeline docstrings updated with new config
   types and examples.
-- `API.md`: updated to v0.2.0 — `Config` removed, three new config classes
+- `API.md`: updated to v0.2.0 - `Config` removed, three new config classes
   documented with full parameter and validation tables.
 - `README.md`: all Python API examples updated to use new config classes;
   version badge bumped to v0.2.0.
@@ -173,7 +195,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.2] - 2026-05-18
 
 ### Added
-- CLI: Single Entry mode — `harmonsmile --pubchem-cid <CID>` and
+- CLI: Single Entry mode - `harmonsmile --pubchem-cid <CID>` and
   `harmonsmile --chembl-id <ID>` fetch and harmonize a single compound
   without an input file. Output saved automatically to
   `results/CID{cid}_harmonsmile.csv` and `results/{id}_harmonsmile.csv`.
@@ -186,8 +208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI: `--coconut-in`, `--coconut-out`, `--coconut-smiles` renamed to
   `--smiles-in`, `--smiles-out`, `--smiles-col` for source-agnostic naming.
   Deprecated aliases kept with `DeprecationWarning`.
-- CLI help groups renamed: `"COCONUT / independent"` → `"SMILES (batch)"`;
-  `"PubChem"` → `"PubChem (batch)"`; `"ChEMBL"` → `"ChEMBL (batch)"`.
+- CLI help groups renamed: `"COCONUT / independent"` -> `"SMILES (batch)"`;
+  `"PubChem"` -> `"PubChem (batch)"`; `"ChEMBL"` -> `"ChEMBL (batch)"`.
 - `API.md` formalized with complete reference for all public classes and methods.
 
 ### Fixed
@@ -196,7 +218,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Docs
 - `RDKitStandardizer.to_iso_kek()`: added Notes section documenting E/Z
-  geometry behavior — chiral centers are preserved; E/Z on double bonds may
+  geometry behavior - chiral centers are preserved; E/Z on double bonds may
   be lost for ambiguous cases during kekulization (known RDKit behavior).
 
 ---
@@ -205,8 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `RDKitStandardizer` class with two SMILES normalization methods:
-  - `to_iso_kek()` — canonical + isomeric + Kekulized SMILES (COCONUT 2.0 convention)
-  - `to_conn_kek()` — canonical + connectivity-only + Kekulized SMILES
+  - `to_iso_kek()` - canonical + isomeric + Kekulized SMILES (COCONUT 2.0 convention)
+  - `to_conn_kek()` - canonical + connectivity-only + Kekulized SMILES
 - `PubChemIngest` pipeline: fetches all available properties from PubChem REST API
   (SMILES, ConnectivitySMILES, MolecularWeight, MolecularFormula, InChI, InChIKey,
   XLogP, TPSA, Charge, HBondDonorCount, HBondAcceptorCount, RotatableBondCount,
@@ -214,11 +236,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ChEMBLIngest` pipeline: fetches properties from ChEMBL REST API by ChEMBL ID
   (canonical_smiles, InChI, InChIKey, MW, MolecularFormula, ALogP, TPSA, HBA, HBD,
   RotatableBonds, HeavyAtoms, QED, Ro5Violations) and appends standardized `SMILES_RDKit` column.
-- `SMILESPrep` pipeline: standardizes SMILES from any CSV/Excel file using RDKit —
+- `SMILESPrep` pipeline: standardizes SMILES from any CSV/Excel file using RDKit -
   accepts any tabular source (COCONUT, ChEMBL downloads, in-house databases, etc.).
 - `_PubChemClient` with configurable retries, exponential backoff, persistent
   `requests.Session`, context manager protocol, and pluggable logger.
-- `_ChEMBLClient` with same design as `_PubChemClient` — ChEMBL ID format validation,
+- `_ChEMBLClient` with same design as `_PubChemClient` - ChEMBL ID format validation,
   exponential backoff, context manager protocol.
 - `Config` frozen dataclass for pipeline configuration with `__post_init__` validation.
 - `load_table()` and `save_table()` I/O utilities supporting CSV, TSV, XLSX, and XLS
@@ -237,7 +259,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pubchem, chembl, and security.
 
 ### Security
-- `_PubChemClient`: bounds validation on `sleep` (0.1–10.0 s) and `retries` (1–10).
+- `_PubChemClient`: bounds validation on `sleep` (0.1-10.0 s) and `retries` (1-10).
 - `_PubChemClient.fetch_props()`: CID sanitization strips non-numeric characters
   before URL construction.
 - `_ChEMBLClient`: same bounds validation; ChEMBL ID format validated against
@@ -279,12 +301,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Future Releases (Planned)
 
-### [0.3.0] — ML-ready features
+### [0.3.0] - ML-ready features
 - Standardized pipeline to generate ECFP fingerprints (with/without chirality).
 - InChI / InChIKey generation for deduplication and robust cross-database matching.
 
 ---
 
+[0.2.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.3...v0.2.0

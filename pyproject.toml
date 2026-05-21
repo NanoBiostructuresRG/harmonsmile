@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "harmonsmile"
-version = "0.2.2"
+version = "0.2.3"
 description = "Toolkit for harmonizing SMILES strings to canonical + isomeric + Kekulized convention (RDKit)"
 readme = "README.md"
 license = { file = "LICENSE" }
