@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """Package version metadata."""
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 PROJECT_NAME = "HARMONSMILE"
 PROJECT_VERSION = __version__
 PROJECT_STATUS = "alpha"
