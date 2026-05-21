@@ -1,32 +1,68 @@
 # HARMONSMILE
 
-**Harmonize SMILES Strings for Cheminformatics and Machine Learning**
+<section class="hs-hero">
+  <div class="hs-hero__content">
+    <p class="hs-eyebrow">Cheminformatics data preparation</p>
+    <div class="hs-brand" aria-label="HARMONSMILE">
+      <span class="hs-dotmark" aria-hidden="true">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </span>
+      <span class="hs-wordmark">HARMONSMILE</span>
+    </div>
+    <p class="hs-subtitle">Harmonize SMILES strings for reproducible cheminformatics and machine learning workflows.</p>
 
----
+    <div class="hs-actions">
+      <a class="md-button md-button--primary" href="#installation">Install</a>
+      <a class="md-button" href="#quick-start">Quick start</a>
+      <a class="md-button" href="api/">API Reference</a>
+    </div>
 
-## Description
+    <div class="hs-badges">
+      <a href="https://github.com/NanoBiostructuresRG/harmonsmile/actions/workflows/ci.yml"><img src="https://github.com/NanoBiostructuresRG/harmonsmile/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+      <a href="https://pypi.org/project/harmonsmile/"><img src="https://img.shields.io/pypi/v/harmonsmile.svg" alt="PyPI"></a>
+      <a href="https://pypi.org/project/harmonsmile/"><img src="https://img.shields.io/pypi/pyversions/harmonsmile.svg" alt="Python versions"></a>
+      <a href="https://github.com/NanoBiostructuresRG/harmonsmile/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-LGPL_v3-blue.svg" alt="License: LGPL v3"></a>
+    </div>
+  </div>
+</section>
 
-**HARMONSMILE** solves a common problem in cheminformatics: SMILES strings for the same
-molecule look different depending on the source (PubChem, ChEMBL, COCONUT, in-house
-databases). This inconsistency breaks comparisons, deduplication, and machine learning
+<section class="hs-panel">
+  <div class="hs-grid hs-grid--three">
+    <article class="hs-card">
+      <span class="hs-card__icon">DB</span>
+      <h3>Normalize datasets</h3>
+      <p>Standardize SMILES from PubChem, ChEMBL, COCONUT, and in-house collections.</p>
+    </article>
+
+    <article class="hs-card">
+      <span class="hs-card__icon">RD</span>
+      <h3>RDKit convention</h3>
+      <p>Generate canonical, isomeric, Kekulized representations for consistent comparison.</p>
+    </article>
+
+    <article class="hs-card">
+      <span class="hs-card__icon">ML</span>
+      <h3>ML-ready outputs</h3>
+      <p>Append harmonized columns that are easier to deduplicate, compare, and model.</p>
+    </article>
+  </div>
+</section>
+
+## Why HARMONSMILE?
+
+The same molecule can arrive with different SMILES strings depending on the source.
+That inconsistency complicates comparisons, deduplication, and machine learning
 pipelines that expect a uniform molecular representation.
 
----
+**HARMONSMILE** automates molecular dataset preparation for cheminformatics workflows
+and **phase 1** machine learning applications within computational drug discovery.
 
-## Purpose
-
-The primary objective of **HARMONSMILE** is to automate the preparation of molecular
-datasets for cheminformatics workflows and **phase 1** machine learning applications
-within the computational drug discovery pipeline.
-
-The platform enables:
-
-- **Data Harmonization**: Standardizes SMILES strings to a consistent format —
-  **canonical + isomeric + Kekulized** — ensuring that the same molecule is represented
-  identically across different datasets and sources. It follows the RDKit convention
-  for canonicalization, which is widely adopted in the cheminformatics community.
-
----
+!!! tip "Core harmonization"
+    HARMONSMILE standardizes SMILES to a consistent **canonical + isomeric + Kekulized**
+    representation using the RDKit convention widely adopted by the cheminformatics
+    community.
 
 ## Installation
 
@@ -36,60 +72,56 @@ pip install harmonsmile
 
 > RDKit is required and installed automatically (`rdkit>=2022.09`).
 
----
-
 ## Quick Start
 
-### Python API
+=== "PubChem"
 
-Standardize a single SMILES string:
+    ```python
+    from harmonsmile import PubChemIngest, PubChemConfig
 
-```python
-from harmonsmile import RDKitStandardizer
+    cfg = PubChemConfig(
+        input_path="examples/example_pubchem.csv",
+        output_path="results/example_pubchem_harmonized.csv",
+    )
+    PubChemIngest(cfg).run()
+    ```
 
-std = RDKitStandardizer()
-print(std.to_iso_kek("c1ccccc1"))    # canonical + isomeric + Kekulized
-print(std.to_conn_kek("c1ccccc1"))   # canonical + connectivity-only + Kekulized
-```
+=== "ChEMBL"
 
-Fetch properties from PubChem and harmonize:
+    ```python
+    from harmonsmile import ChEMBLIngest, ChEMBLConfig
 
-```python
-from harmonsmile import PubChemIngest, PubChemConfig
+    cfg = ChEMBLConfig(
+        input_path="examples/example_chembl.csv",
+        output_path="results/example_chembl_harmonized.csv",
+    )
+    ChEMBLIngest(cfg).run()
+    ```
 
-cfg = PubChemConfig(
-    input_path="examples/example_pubchem.csv",   # requires: id, PubChem CID
-    output_path="results/example_pubchem_harmonized.csv",
-)
-PubChemIngest(cfg).run()
-```
+=== "SMILES"
 
-Fetch properties from ChEMBL and harmonize:
+    ```python
+    from harmonsmile import SMILESPrep, SMILESConfig
 
-```python
-from harmonsmile import ChEMBLIngest, ChEMBLConfig
+    cfg = SMILESConfig(
+        input_path="examples/example_smiles.csv",
+        smiles_col="SMILES",
+        output_path="results/example_smiles_harmonized.csv",
+    )
+    SMILESPrep(cfg).run()
+    ```
 
-cfg = ChEMBLConfig(
-    input_path="examples/example_chembl.csv",    # requires: id, ChEMBL ID
-    output_path="results/example_chembl_harmonized.csv",
-)
-ChEMBLIngest(cfg).run()
-```
+=== "Single SMILES"
 
-Harmonize any file with a SMILES column:
+    ```python
+    from harmonsmile import RDKitStandardizer
 
-```python
-from harmonsmile import SMILESPrep, SMILESConfig
+    std = RDKitStandardizer()
+    print(std.to_iso_kek("c1ccccc1"))    # canonical + isomeric + Kekulized
+    print(std.to_conn_kek("c1ccccc1"))   # canonical + connectivity-only + Kekulized
+    ```
 
-cfg = SMILESConfig(
-    input_path="examples/example_smiles.csv",
-    smiles_col="SMILES",
-    output_path="results/example_smiles_harmonized.csv",
-)
-SMILESPrep(cfg).run()
-```
-
-### Command-Line Interface
+## Command-Line Interface
 
 ```bash
 # PubChem batch
@@ -104,24 +136,63 @@ harmonsmile --smiles-in examples/db.csv --smiles-col SMILES --smiles-out results
 # Single Entry
 harmonsmile --pubchem-cid 2723949
 harmonsmile --chembl-id CHEMBL294199
-
-# As a Python module
-python -m harmonsmile --pubchem-in examples/db.csv --pubchem-out results/out.csv
 ```
-
----
 
 ## Pipelines
 
-| Pipeline | Config | Source | Input | API |
-|---|---|---|---|---|
-| `PubChemIngest` | `PubChemConfig` | PubChem | CSV with `PubChem CID` column | REST (public) |
-| `ChEMBLIngest` | `ChEMBLConfig` | ChEMBL | CSV with `ChEMBL ID` column | REST (public) |
-| `SMILESPrep` | `SMILESConfig` | Any | CSV/Excel with any SMILES column | — (local file) |
+<div class="hs-grid hs-grid--three">
+  <article class="hs-card hs-card--compact">
+    <h3>PubChem</h3>
+    <p><code>PubChemIngest</code> reads CSV data with a <code>PubChem CID</code> column and resolves molecules through the public REST API.</p>
+  </article>
+
+  <article class="hs-card hs-card--compact">
+    <h3>ChEMBL</h3>
+    <p><code>ChEMBLIngest</code> reads CSV data with a <code>ChEMBL ID</code> column and resolves structures through the public REST API.</p>
+  </article>
+
+  <article class="hs-card hs-card--compact">
+    <h3>Local SMILES</h3>
+    <p><code>SMILESPrep</code> accepts CSV or Excel files with any SMILES column name and processes them locally.</p>
+  </article>
+</div>
+
+<table class="hs-pipeline-table">
+  <thead>
+    <tr>
+      <th>Pipeline</th>
+      <th>Config</th>
+      <th>Source</th>
+      <th>Input</th>
+      <th>API</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>PubChemIngest</code></td>
+      <td><code>PubChemConfig</code></td>
+      <td>PubChem</td>
+      <td>CSV with <code>PubChem CID</code> column</td>
+      <td>REST (public)</td>
+    </tr>
+    <tr>
+      <td><code>ChEMBLIngest</code></td>
+      <td><code>ChEMBLConfig</code></td>
+      <td>ChEMBL</td>
+      <td>CSV with <code>ChEMBL ID</code> column</td>
+      <td>REST (public)</td>
+    </tr>
+    <tr>
+      <td><code>SMILESPrep</code></td>
+      <td><code>SMILESConfig</code></td>
+      <td>Any</td>
+      <td>CSV/Excel with any SMILES column</td>
+      <td>Local file</td>
+    </tr>
+  </tbody>
+</table>
 
 All pipelines append a `SMILES_RDKit` column with the harmonized SMILES.
-
----
 
 ## Input Format
 
@@ -133,22 +204,15 @@ All pipelines append a `SMILES_RDKit` column with the harmonized SMILES.
 
 Supported file formats: CSV, TSV, XLSX, XLS.
 
----
-
 ## Citation
 
-If you use HARMONSMILE in your research, please cite:
-
+```text
+Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning (v0.2.2).
+Zenodo. https://doi.org/10.5281/zenodo.20321584
 ```
-Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for
-Cheminformatics and Machine Learning (v0.2.2). Tecnologico de Monterrey.
-https://github.com/NanoBiostructuresRG/harmonsmile
-```
-
----
 
 ## License
 
 This project is licensed under the terms of the
-[GNU Lesser General Public License v3.0 or later](https://github.com/NanoBiostructuresRG/harmonsmile/blob/main/LICENSE).  
+[GNU Lesser General Public License v3.0 or later](https://github.com/NanoBiostructuresRG/harmonsmile/blob/main/LICENSE).
 SPDX identifier: `LGPL-3.0-or-later`.
