@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.2] - 2026-05-21
+
+### Added
+- MkDocs + Material theme + mkdocstrings documentation infrastructure.
+- `docs/index.md` — home page mirroring `README.md` content.
+- `docs/api.md` — auto-generated API reference from NumPy-style docstrings.
+- `docs/changelog.md` — changelog page including `CHANGELOG.md` via snippets.
+- `mkdocs.yml` — MkDocs configuration with Material theme, mkdocstrings
+  plugin (NumPy style), and navigation structure.
+- `.github/workflows/docs.yml` — new workflow that builds and deploys
+  documentation to GitHub Pages on every push to `main`.
+- `pyproject.toml`: new `docs` optional dependency group
+  (`mkdocs-material>=9.5`, `mkdocstrings[python]>=0.25`).
+- `pyproject.toml`: `Documentation` URL added under `[project.urls]`.
+
+### Removed
+- `API.md` — replaced by auto-generated `docs/api.md`.
+
+### Internal
+- `requirements-dev.txt`: documentation dependencies added.
+- `version.py`: version bumped to `0.2.2`.
+
+---
+
 ## [0.2.1] - 2026-05-20
 
 ### Changed
@@ -255,17 +279,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Future Releases (Planned)
 
-### [0.2.2] — MkDocs documentation
-- MkDocs + Material theme + mkdocstrings setup.
-- Auto-generated API reference from NumPy-style docstrings.
-- Published to GitHub Pages via GitHub Actions.
-
 ### [0.3.0] — ML-ready features
 - Standardized pipeline to generate ECFP fingerprints (with/without chirality).
 - InChI / InChIKey generation for deduplication and robust cross-database matching.
 
 ---
 
+[0.2.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.1.2...v0.1.3
