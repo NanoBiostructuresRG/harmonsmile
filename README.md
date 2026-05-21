@@ -175,6 +175,7 @@ HARMONSMILE/
 ├── logs/                  # Error logs (not installed)
 ├── pyproject.toml
 ├── environment.yml
+├── mkdocs.yml
 ├── requirements-dev.txt
 ├── CHANGELOG.md
 ├── CITATION.cff
