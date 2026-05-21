@@ -1,7 +1,7 @@
 # HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.2.0-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![Version](https://img.shields.io/badge/version-v0.2.1-blue.svg)](https://pypi.org/project/harmonsmile/)
 [![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 
@@ -204,7 +204,7 @@ If you use HARMONSMILE in your research, please cite it using the metadata in
 
 ```
 Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for
-Cheminformatics and Machine Learning (v0.2.0). Tecnologico de Monterrey.
+Cheminformatics and Machine Learning (v0.2.1). Tecnologico de Monterrey.
 https://github.com/NanoBiostructuresRG/harmonsmile
 ```
 
