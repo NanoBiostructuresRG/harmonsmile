@@ -1,0 +1,40 @@
+# Contributing to HARMONSMILE
+
+Thank you for your interest in contributing to HARMONSMILE!  
+This project is maintained by the [NanoBiostructures Research Group](https://nanobiostructuresrg.github.io) at Tecnológico de Monterrey.
+
+## How to contribute
+
+### Reporting bugs
+Open an issue on [GitHub Issues](https://github.com/NanoBiostructuresRG/harmonsmile/issues) with:
+- A clear description of the problem
+- A minimal reproducible example
+- Your environment details (OS, Python version, RDKit version)
+
+### Suggesting features
+Open an issue with the `enhancement` label describing:
+- The use case
+- Why it would be useful beyond your specific workflow
+
+### Submitting a pull request
+1. Fork the repository
+2. Create a branch from `main`: `git switch -c dev/your-feature`
+3. Make your changes
+4. Run the test suite: `pytest tests/`
+5. Push your branch and open a pull request against `main`
+
+## Development setup
+
+```bash
+git clone https://github.com/NanoBiostructuresRG/harmonsmile.git
+cd harmonsmile
+conda env create -f environment.yml
+conda activate harmonsmile_env
+pip install -e ".[dev]"
+```
+
+## Code style
+This project follows [PEP 8](https://peps.python.org/pep-0008/). Please run `ruff` or `flake8` before submitting.
+
+## Questions
+Open an issue or contact the maintainer via the repository.
