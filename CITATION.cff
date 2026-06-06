@@ -2,14 +2,15 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning"
-version: "0.2.3"
-date-released: "2026-05-21"
+version: "0.2.4"
+date-released: "2026-06-05"
 authors:
   - family-names: "Contreras-Torres"
     given-names: "Flavio F."
     orcid: "https://orcid.org/0000-0003-2375-131X"
     affiliation: "Tecnologico de Monterrey"
 repository-code: "https://github.com/NanoBiostructuresRG/harmonsmile"
+doi: "10.5281/zenodo.20275498"
 license: "LGPL-3.0-or-later"
 abstract: >-
   HARMONSMILE is a toolkit for harmonizing SMILES strings to a consistent

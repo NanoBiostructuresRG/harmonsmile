@@ -2,28 +2,22 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-
 # Environments
 .vscode/
 .venv/
 .env
-
 # Local data and outputs
 data/*
 results/*
 logs/*
-
 # Keep folders empty
 !data/.gitkeep
 !results/.gitkeep
 !logs/.gitkeep
-
 # Distribution and build files
 dist/
 *.egg-info/
 build/
-__pycache__/
-*.pyc
 .pytest_tmp/
-.pytest_cache/
+site/
 tests_output.txt

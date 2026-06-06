@@ -11,12 +11,13 @@
       </span>
       <span class="hs-wordmark">HARMONSMILE</span>
     </div>
-    <p class="hs-subtitle">Harmonize SMILES strings for reproducible cheminformatics and machine learning workflows.</p>
+    <p class="hs-subtitle">Harmonize SMILES strings for reproducible molecular dataset preparation.</p>
 
     <div class="hs-actions">
-      <a class="md-button md-button--primary" href="#installation">Install</a>
-      <a class="md-button" href="#quick-start">Quick start</a>
+      <a class="md-button md-button--primary" href="usage/#installation">Install</a>
+      <a class="md-button" href="usage/#quick-start">Quick start</a>
       <a class="md-button" href="api/">API Reference</a>
+      <a class="md-button" href="changelog/">Changelog</a>
     </div>
 
     <div class="hs-badges">
@@ -27,6 +28,36 @@
     </div>
   </div>
 </section>
+
+
+## Why SMILES harmonization matters
+
+Molecular datasets are often assembled from multiple sources: PubChem records, ChEMBL bioactivity tables, natural product collections such as COCONUT, and local or in-house compound lists. In these settings, the SMILES column is frequently used as the practical key for comparison, merging, deduplication, and downstream feature generation. However, SMILES strings are not inherently unique across sources. The same compound can be represented with different atom ordering, aromaticity notation, stereochemical detail, or source-specific formatting conventions.
+
+This becomes a practical problem before any modeling step begins. If molecular strings are compared exactly as received, equivalent records may fail to match, duplicated compounds may remain in curated tables, and merged datasets may carry representation-level noise into descriptor calculation, fingerprint generation, or machine learning workflows. In some cases, inconsistent molecular strings can also make it harder to identify repeated compounds across training, validation, or external evaluation datasets.
+
+**HARMONSMILE** addresses this preprocessing layer by converting input SMILES into a reproducible RDKit-based representation: canonical, isomeric, and Kekulized. It does not replace chemical curation or RDKit itself; instead, it provides a lightweight and reusable harmonization step for molecular tables, helping researchers prepare more comparable datasets before deduplication, analysis, and machine learning in computational drug discovery.
+
+
+
+
+!!! tip "Core harmonization"
+    HARMONSMILE standardizes SMILES to a consistent **canonical + isomeric + Kekulized**
+    representation using the RDKit convention widely adopted by the cheminformatics
+    community.
+
+## What You Provide and Receive
+
+| You provide | HARMONSMILE returns |
+|---|---|
+| A tabular molecular dataset from PubChem, ChEMBL, COCONUT, or another source. | Output tables with harmonized SMILES columns added. |
+| A SMILES column, or source identifiers for supported PubChem and ChEMBL workflows. | RDKit-based canonical, isomeric, and Kekulized SMILES representations. |
+| Optional metadata or identifiers that should be preserved with each record. | Data suitable for comparison, deduplication, curation, and ML preprocessing. |
+
+For installation, examples, command-line usage, pipeline details, and input
+formats, see the [Usage](usage.md) page.
+
+## Workflow Overview
 
 <section class="hs-panel">
   <div class="hs-grid hs-grid--three">
@@ -50,165 +81,17 @@
   </div>
 </section>
 
-## Why HARMONSMILE?
+## Documentation
 
-The same molecule can arrive with different SMILES strings depending on the source.
-That inconsistency complicates comparisons, deduplication, and machine learning
-pipelines that expect a uniform molecular representation.
-
-**HARMONSMILE** automates molecular dataset preparation for cheminformatics workflows
-and **phase 1** machine learning applications within computational drug discovery.
-
-!!! tip "Core harmonization"
-    HARMONSMILE standardizes SMILES to a consistent **canonical + isomeric + Kekulized**
-    representation using the RDKit convention widely adopted by the cheminformatics
-    community.
-
-## Installation
-
-```bash
-pip install harmonsmile
-```
-
-> RDKit is required and installed automatically (`rdkit>=2022.09`).
-
-## Quick Start
-
-=== "PubChem"
-
-    ```python
-    from harmonsmile import PubChemIngest, PubChemConfig
-
-    cfg = PubChemConfig(
-        input_path="examples/example_pubchem.csv",
-        output_path="results/example_pubchem_harmonized.csv",
-    )
-    PubChemIngest(cfg).run()
-    ```
-
-=== "ChEMBL"
-
-    ```python
-    from harmonsmile import ChEMBLIngest, ChEMBLConfig
-
-    cfg = ChEMBLConfig(
-        input_path="examples/example_chembl.csv",
-        output_path="results/example_chembl_harmonized.csv",
-    )
-    ChEMBLIngest(cfg).run()
-    ```
-
-=== "SMILES"
-
-    ```python
-    from harmonsmile import SMILESPrep, SMILESConfig
-
-    cfg = SMILESConfig(
-        input_path="examples/example_smiles.csv",
-        smiles_col="SMILES",
-        output_path="results/example_smiles_harmonized.csv",
-    )
-    SMILESPrep(cfg).run()
-    ```
-
-=== "Single SMILES"
-
-    ```python
-    from harmonsmile import RDKitStandardizer
-
-    std = RDKitStandardizer()
-    print(std.to_iso_kek("c1ccccc1"))    # canonical + isomeric + Kekulized
-    print(std.to_conn_kek("c1ccccc1"))   # canonical + connectivity-only + Kekulized
-    ```
-
-## Command-Line Interface
-
-```bash
-# PubChem batch
-harmonsmile --pubchem-in examples/db.csv --pubchem-out results/out.csv
-
-# ChEMBL batch
-harmonsmile --chembl-in examples/db.csv --chembl-out results/out.csv
-
-# SMILES batch
-harmonsmile --smiles-in examples/db.csv --smiles-col SMILES --smiles-out results/out.csv
-
-# Single Entry
-harmonsmile --pubchem-cid 2723949
-harmonsmile --chembl-id CHEMBL294199
-```
-
-## Pipelines
-
-<div class="hs-grid hs-grid--three">
-  <article class="hs-card hs-card--compact">
-    <h3>PubChem</h3>
-    <p><code>PubChemIngest</code> reads CSV data with a <code>PubChem CID</code> column and resolves molecules through the public REST API.</p>
-  </article>
-
-  <article class="hs-card hs-card--compact">
-    <h3>ChEMBL</h3>
-    <p><code>ChEMBLIngest</code> reads CSV data with a <code>ChEMBL ID</code> column and resolves structures through the public REST API.</p>
-  </article>
-
-  <article class="hs-card hs-card--compact">
-    <h3>Local SMILES</h3>
-    <p><code>SMILESPrep</code> accepts CSV or Excel files with any SMILES column name and processes them locally.</p>
-  </article>
-</div>
-
-<table class="hs-pipeline-table">
-  <thead>
-    <tr>
-      <th>Pipeline</th>
-      <th>Config</th>
-      <th>Source</th>
-      <th>Input</th>
-      <th>API</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>PubChemIngest</code></td>
-      <td><code>PubChemConfig</code></td>
-      <td>PubChem</td>
-      <td>CSV with <code>PubChem CID</code> column</td>
-      <td>REST (public)</td>
-    </tr>
-    <tr>
-      <td><code>ChEMBLIngest</code></td>
-      <td><code>ChEMBLConfig</code></td>
-      <td>ChEMBL</td>
-      <td>CSV with <code>ChEMBL ID</code> column</td>
-      <td>REST (public)</td>
-    </tr>
-    <tr>
-      <td><code>SMILESPrep</code></td>
-      <td><code>SMILESConfig</code></td>
-      <td>Any</td>
-      <td>CSV/Excel with any SMILES column</td>
-      <td>Local file</td>
-    </tr>
-  </tbody>
-</table>
-
-All pipelines append a `SMILES_RDKit` column with the harmonized SMILES.
-
-## Input Format
-
-| Pipeline | Required columns |
-|---|---|
-| `PubChemIngest` | `id` (optional), `PubChem CID` |
-| `ChEMBLIngest` | `id` (optional), `ChEMBL ID` |
-| `SMILESPrep` | `id` (optional), `<smiles_col>` (any name) |
-
-Supported file formats: CSV, TSV, XLSX, XLS.
+- [Usage](usage.md) covers installation, quick-start examples, CLI usage, pipelines,
+  and input formats.
+- [API Reference](api.md) documents public classes, pipelines, and functions.
+- [Changelog](changelog.md) lists notable project changes.
 
 ## Citation
 
 ```text
-Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning (v0.2.2).
-Zenodo. https://doi.org/10.5281/zenodo.20321584
+Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning. Zenodo. https://doi.org/10.5281/zenodo.20275498
 ```
 
 ## License

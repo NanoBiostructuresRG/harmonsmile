@@ -1,7 +1,7 @@
 # HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.2.3-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![Version](https://img.shields.io/badge/version-v0.2.4-blue.svg)](https://pypi.org/project/harmonsmile/)
 [![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-teal.svg)](https://nanobiostructuresrg.github.io/harmonsmile/)
@@ -14,6 +14,10 @@
 molecule look different depending on the source (PubChem, ChEMBL, COCONUT, in-house
 databases). This inconsistency breaks comparisons, deduplication, and machine learning
 pipelines that expect a uniform molecular representation.
+
+It is intended for computational chemists, cheminformatics researchers, ML
+practitioners preparing molecular datasets, and maintainers integrating
+PubChem, ChEMBL, and in-house sources.
 
 ---
 
@@ -184,6 +188,8 @@ HARMONSMILE/
 |-- requirements-dev.txt
 |-- CHANGELOG.md
 |-- CITATION.cff
+|-- CODE_OF_CONDUCT.md
+|-- CONTRIBUTING.md
 |-- COPYING
 |-- COPYING.LESSER
 |-- LICENSE
@@ -202,6 +208,9 @@ Contributions are welcome. Please open an issue before submitting a pull request
 Follow the existing code style: NumPy-style docstrings, type hints, and SPDX license
 headers in all source files.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
+Please also read our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ---
 
 ## Citation
@@ -211,8 +220,7 @@ If you use HARMONSMILE in your research, please cite it using the metadata in
 
 ```text
 Contreras-Torres, F. F. (2026). HARMONSMILE: Harmonize SMILES Strings for
-Cheminformatics and Machine Learning (v0.2.3). Tecnologico de Monterrey.
-https://github.com/NanoBiostructuresRG/harmonsmile
+Cheminformatics and Machine Learning. Zenodo. https://doi.org/10.5281/zenodo.20275498
 ```
 
 ---
