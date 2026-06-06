@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.4] - 2026-06-05
+
+### Added
+- `CONTRIBUTING.md` — contribution guidelines for external contributors.
+- `CODE_OF_CONDUCT.md` — community standards based on Contributor Covenant 2.1.
+
+### Changed
+- `pyproject.toml`: migrated to dynamic versioning via `hatchling` (`tool.hatch.version`).
+- `pyproject.toml`: added `docs` optional dependency group with pinned versions.
+- `pyproject.toml`: added `Documentation` and `Changelog` URLs.
+- `pyproject.toml`: added `Operating System :: OS Independent` classifier.
+- `pyproject.toml`: added SPDX header and `license-files` field.
+- `README.md`: added links to `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
+- `CITATION.cff`: version and release date updated for `0.2.4`.
+
+### Internal
+- `version.py`: version bumped to `0.2.4`.
+- `site/` added to `.gitignore` to prevent MkDocs build artifacts from being tracked.
+
+---
 ## [0.2.3] - 2026-05-21
 
 ### Changed
