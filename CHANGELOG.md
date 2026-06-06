@@ -20,7 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pyproject.toml`: added `Operating System :: OS Independent` classifier.
 - `pyproject.toml`: added SPDX header and `license-files` field.
 - `README.md`: added links to `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
+- `README.md`: clarified target users for computational chemistry,
+  cheminformatics, machine learning, and data-integration workflows.
+- `CONTRIBUTING.md`: expanded expectations for documentation, changelog, CI,
+  PR target branch, and scientific/RDKit-related changes.
+- `CODE_OF_CONDUCT.md`: added a private reporting path for conduct reports.
 - `CITATION.cff`: version and release date updated for `0.2.4`.
+- `CITATION.cff`: added the Zenodo DOI to match the README citation.
 
 ### Internal
 - `version.py`: version bumped to `0.2.4`.
