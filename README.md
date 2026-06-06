@@ -15,6 +15,10 @@ molecule look different depending on the source (PubChem, ChEMBL, COCONUT, in-ho
 databases). This inconsistency breaks comparisons, deduplication, and machine learning
 pipelines that expect a uniform molecular representation.
 
+It is intended for computational chemists, cheminformatics researchers, ML
+practitioners preparing molecular datasets, and maintainers integrating
+PubChem, ChEMBL, and in-house sources.
+
 ---
 
 ## Purpose

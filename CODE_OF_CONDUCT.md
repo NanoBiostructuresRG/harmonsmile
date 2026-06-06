@@ -34,8 +34,12 @@ response to any instances of unacceptable behavior.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by opening an issue or contacting the maintainer directly via GitHub.
-All complaints will be reviewed and investigated promptly and fairly.
+reported privately by email to Flavio F. Contreras-Torres, the project
+maintainer, at <contreras.flavio@tec.mx>. Please do not use public GitHub
+issues for sensitive conduct reports.
+
+Conduct reports are received by the project maintainer and will be reviewed and
+investigated promptly, fairly, and with appropriate confidentiality.
 
 ## Attribution
 
