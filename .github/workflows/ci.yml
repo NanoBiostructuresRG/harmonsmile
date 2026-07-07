@@ -50,6 +50,7 @@ jobs:
           assert hasattr(harmonsmile, 'PubChemIngest'), 'PubChemIngest missing'
           assert hasattr(harmonsmile, 'ChEMBLIngest'), 'ChEMBLIngest missing'
           assert hasattr(harmonsmile, 'SMILESPrep'), 'SMILESPrep missing'
+          assert not hasattr(harmonsmile, "PubChemClient"), "PubChemClient must not be public"
           print(harmonsmile.__version__, 'OK')
           "
 
@@ -79,6 +80,7 @@ jobs:
           assert hasattr(harmonsmile, 'PubChemIngest'), 'PubChemIngest missing'
           assert hasattr(harmonsmile, 'ChEMBLIngest'), 'ChEMBLIngest missing'
           assert hasattr(harmonsmile, 'SMILESPrep'), 'SMILESPrep missing'
+          assert not hasattr(harmonsmile, "PubChemClient"), "PubChemClient must not be public"
           print(harmonsmile.__version__, 'wheel OK')
           "
 
@@ -99,5 +101,6 @@ jobs:
           assert hasattr(harmonsmile, 'ChEMBLConfig'), 'ChEMBLConfig missing'
           assert hasattr(harmonsmile, 'SMILESConfig'), 'SMILESConfig missing'
           assert hasattr(harmonsmile, 'RDKitStandardizer'), 'RDKitStandardizer missing'
+          assert not hasattr(harmonsmile, "PubChemClient"), "PubChemClient must not be public"
           print(harmonsmile.__version__, 'sdist OK')
           "
