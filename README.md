@@ -64,38 +64,38 @@ print(std.to_conn_kek("c1ccccc1"))   # canonical + connectivity-only + Kekulized
 Fetch properties from PubChem and harmonize:
 
 ```python
-from harmonsmile import PubChemIngest, PubChemConfig
+from harmonsmile import PubChemIngest, PubChemConfig, save_table
 
 cfg = PubChemConfig(
     input_path="examples/example_pubchem.csv",   # requires: id, PubChem CID
-    output_path="results/example_pubchem_harmonized.csv",
 )
-PubChemIngest(cfg).run()
+df = PubChemIngest(cfg).run()
+save_table(df, "results/example_pubchem_harmonized.csv")
 ```
 
 Fetch properties from ChEMBL and harmonize:
 
 ```python
-from harmonsmile import ChEMBLIngest, ChEMBLConfig
+from harmonsmile import ChEMBLIngest, ChEMBLConfig, save_table
 
 cfg = ChEMBLConfig(
     input_path="examples/example_chembl.csv",    # requires: id, ChEMBL ID
-    output_path="results/example_chembl_harmonized.csv",
 )
-ChEMBLIngest(cfg).run()
+df = ChEMBLIngest(cfg).run()
+save_table(df, "results/example_chembl_harmonized.csv")
 ```
 
 Harmonize any file with a SMILES column (COCONUT, in-house, etc.):
 
 ```python
-from harmonsmile import SMILESPrep, SMILESConfig
+from harmonsmile import SMILESPrep, SMILESConfig, save_table
 
 cfg = SMILESConfig(
     input_path="examples/example_smiles.csv",
     smiles_col="SMILES",                      # any column name
-    output_path="results/example_smiles_harmonized.csv",
 )
-SMILESPrep(cfg).run()
+df = SMILESPrep(cfg).run()
+save_table(df, "results/example_smiles_harmonized.csv")
 ```
 
 ### Command-Line Interface
@@ -139,6 +139,9 @@ python -m harmonsmile --pubchem-in examples/database1.csv --pubchem-out results/
 | `SMILESPrep` | `SMILESConfig` | Any | CSV/Excel with any SMILES column | Local file |
 
 All pipelines append a `SMILES_RDKit` column with the harmonized SMILES.
+Pipeline `.run()` methods return a `pandas.DataFrame` and do not write files.
+Use `save_table(df, path)` to persist results from Python, or use the CLI
+`--*-out` options.
 
 ---
 
@@ -180,8 +183,6 @@ HARMONSMILE/
 |   `-- version.py         # Package version metadata
 |-- tests/                 # Unit test suite (pytest) - 146 tests
 |-- examples/              # Example scripts and datasets
-|-- results/               # Output data (not installed)
-|-- logs/                  # Error logs (not installed)
 |-- pyproject.toml
 |-- environment.yml
 |-- mkdocs.yml

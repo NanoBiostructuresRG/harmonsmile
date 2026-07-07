@@ -8,8 +8,38 @@ tabular chemical data.
 
 from __future__ import annotations
 import os
+import re
 from typing import Any
 import pandas as pd
+
+
+_UNNAMED_INDEX_RE = re.compile(
+    r"^unnamed(?:[:_\s.-]*\d+)+(?:[:_\s.-]*level[:_\s.-]*\d+)?$",
+    re.IGNORECASE,
+)
+
+
+def _is_accidental_index_column(column: Any) -> bool:
+    """Return True for pandas-generated index columns such as Unnamed: 0."""
+    return bool(_UNNAMED_INDEX_RE.match(str(column).strip()))
+
+
+def _drop_accidental_index_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove pandas-generated index columns without mutating the input frame."""
+    drop_cols = [c for c in df.columns if _is_accidental_index_column(c)]
+    if not drop_cols:
+        return df
+    return df.drop(columns=drop_cols)
+
+
+def _validate_output_path(path: str | os.PathLike) -> None:
+    """Validate the package write boundary path."""
+    output = os.fspath(path)
+    if not output:
+        raise ValueError("output path must not be empty.")
+    parts = re.split(r"[\\/]+", output)
+    if ".." in parts:
+        raise ValueError("output path must not contain path traversal patterns ('..').")
 
 
 def _sanitize_cid(x: Any) -> str | None:
@@ -98,6 +128,8 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
     else:
         raise ValueError(f"Unsupported format: {path}")
 
+    df = _drop_accidental_index_columns(df)
+
     if df.empty:
         raise ValueError(f"Input file has zero rows: {path}")
 
@@ -127,5 +159,6 @@ def save_table(df: pd.DataFrame, path: str | os.PathLike) -> None:
     >>> df = pd.DataFrame({"SMILES": ["C1=CC=CC=C1"], "SMILES_RDKit": ["C1=CC=CC=C1"]})
     >>> save_table(df, "results/output.csv")
     """
+    _validate_output_path(path)
     os.makedirs(os.path.dirname(os.fspath(path)) or ".", exist_ok=True)
     df.to_csv(path, index=False, encoding="utf-8")

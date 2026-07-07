@@ -124,6 +124,21 @@ class TestLoadTable:
         finally:
             os.unlink(path)
 
+    def test_drops_unnamed_index_columns(self):
+        """CSV index artifacts are removed during load."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv",
+                                         delete=False, encoding="utf-8") as f:
+            f.write("Unnamed: 0,Unnamed_0,Unnamed-1,id,SMILES\n0,0,0,1,CCO\n")
+            path = f.name
+        try:
+            df = load_table(path)
+            assert "Unnamed: 0" not in df.columns
+            assert "Unnamed_0" not in df.columns
+            assert "Unnamed-1" not in df.columns
+            assert list(df.columns) == ["id", "SMILES"]
+        finally:
+            os.unlink(path)
+
     # --- v0.1.3 ---
 
     def test_nonexistent_file_raises_file_not_found(self):
@@ -157,6 +172,36 @@ class TestSaveTable:
             assert os.path.exists(path)
         finally:
             os.unlink(path)
+
+    def test_saves_csv_without_index(self):
+        """DataFrame indexes are not persisted as CSV columns."""
+        df = pd.DataFrame({"SMILES": ["CCO"]}, index=[99])
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            path = f.name
+        try:
+            save_table(df, path)
+            df2 = pd.read_csv(path)
+            assert list(df2.columns) == ["SMILES"]
+        finally:
+            os.unlink(path)
+
+    def test_rejects_unsafe_traversal_output_path(self):
+        """Traversal output paths are rejected at the write boundary."""
+        df = pd.DataFrame({"SMILES": ["CCO"]})
+        with pytest.raises(ValueError, match="traversal"):
+            save_table(df, os.path.join("results", "..", "unsafe.csv"))
+
+    def test_rejects_forward_slash_traversal_output_path(self):
+        """Forward-slash traversal is rejected on every host OS."""
+        df = pd.DataFrame({"SMILES": ["CCO"]})
+        with pytest.raises(ValueError, match="traversal"):
+            save_table(df, "../outside.csv")
+
+    def test_rejects_backslash_traversal_output_path(self):
+        """Backslash traversal is rejected on every host OS."""
+        df = pd.DataFrame({"SMILES": ["CCO"]})
+        with pytest.raises(ValueError, match="traversal"):
+            save_table(df, r"..\outside.csv")
 
     def test_creates_parent_dirs(self):
         """Parent directories are created if they do not exist."""

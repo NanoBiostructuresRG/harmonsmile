@@ -13,38 +13,38 @@ pip install harmonsmile
 === "PubChem"
 
     ```python
-    from harmonsmile import PubChemIngest, PubChemConfig
+    from harmonsmile import PubChemIngest, PubChemConfig, save_table
 
     cfg = PubChemConfig(
         input_path="examples/example_pubchem.csv",
-        output_path="results/example_pubchem_harmonized.csv",
     )
-    PubChemIngest(cfg).run()
+    df = PubChemIngest(cfg).run()
+    save_table(df, "results/example_pubchem_harmonized.csv")
     ```
 
 === "ChEMBL"
 
     ```python
-    from harmonsmile import ChEMBLIngest, ChEMBLConfig
+    from harmonsmile import ChEMBLIngest, ChEMBLConfig, save_table
 
     cfg = ChEMBLConfig(
         input_path="examples/example_chembl.csv",
-        output_path="results/example_chembl_harmonized.csv",
     )
-    ChEMBLIngest(cfg).run()
+    df = ChEMBLIngest(cfg).run()
+    save_table(df, "results/example_chembl_harmonized.csv")
     ```
 
 === "SMILES"
 
     ```python
-    from harmonsmile import SMILESPrep, SMILESConfig
+    from harmonsmile import SMILESPrep, SMILESConfig, save_table
 
     cfg = SMILESConfig(
         input_path="examples/example_smiles.csv",
         smiles_col="SMILES",
-        output_path="results/example_smiles_harmonized.csv",
     )
-    SMILESPrep(cfg).run()
+    df = SMILESPrep(cfg).run()
+    save_table(df, "results/example_smiles_harmonized.csv")
     ```
 
 === "Single SMILES"
@@ -129,6 +129,9 @@ harmonsmile --chembl-id CHEMBL294199
 </table>
 
 All pipelines append a `SMILES_RDKit` column with the harmonized SMILES.
+Pipeline `.run()` methods return a `pandas.DataFrame` and do not write files.
+Use `save_table(df, path)` from Python, or CLI `--*-out` options, to persist
+results.
 
 ## Input Format
 

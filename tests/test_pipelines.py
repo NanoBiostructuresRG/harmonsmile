@@ -13,10 +13,6 @@ from harmonsmile import PubChemConfig, ChEMBLConfig, SMILESConfig
 from harmonsmile.pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _write_csv(content: str) -> str:
     """Write content to a temporary CSV file and return its path."""
     f = tempfile.NamedTemporaryFile(mode="w", suffix=".csv",
@@ -31,18 +27,26 @@ def _empty_csv(columns: list[str]) -> str:
     return _write_csv(",".join(columns) + "\n")
 
 
-# ---------------------------------------------------------------------------
-# PubChemIngest
-# ---------------------------------------------------------------------------
+def _std() -> MagicMock:
+    std = MagicMock(spec=["to_iso_kek"])
+    std.to_iso_kek = lambda smiles: f"rdkit:{smiles}" if pd.notna(smiles) else None
+    return std
 
-class TestPubChemIngestEmptyDataFrame:
-    """PubChemIngest.run() raises ValueError on empty input."""
+
+class _StaticClient:
+    def __init__(self, props: dict):
+        self.props = props
+
+    def fetch_props(self, *_args):
+        return self.props
+
+
+class TestPubChemIngest:
+    """PubChemIngest output contract tests."""
 
     def test_empty_input_raises(self):
-        """Zero-row input file raises ValueError before any API call."""
         path = _empty_csv(["id", "PubChem CID"])
-        out = path.replace(".csv", "_out.csv")
-        cfg = PubChemConfig(input_path=path, output_path=out)
+        cfg = PubChemConfig(input_path=path)
         mock_client = MagicMock()
         try:
             with pytest.raises(ValueError, match="zero rows"):
@@ -51,47 +55,78 @@ class TestPubChemIngestEmptyDataFrame:
         finally:
             os.unlink(path)
 
-
-class TestPubChemIngestMissingSmiles:
-    """PubChemIngest.run() emits a warning when SMILES column is absent."""
-
     def test_missing_smiles_column_emits_warning(self, caplog):
-        """If SMILES is not in fetched properties, a logger.warning is emitted."""
         path = _write_csv("id,PubChem CID\n1,702\n")
-        out = path.replace(".csv", "_out.csv")
-        cfg = PubChemConfig(
-            input_path=path,
-            output_path=out,
-            props=("MolecularWeight",),
-        )
-        mock_client = MagicMock()
-        mock_client.fetch_props.return_value = {"MolecularWeight": "46.07"}
-        mock_std = MagicMock()
+        cfg = PubChemConfig(input_path=path, props=("MolecularWeight",))
+        mock_client = _StaticClient({"MolecularWeight": "46.07"})
 
         try:
             with caplog.at_level(logging.WARNING, logger="harmonsmile.pipelines"):
-                PubChemIngest(cfg, client=mock_client, std=mock_std).run()
-            assert any("SMILES" in msg for msg in caplog.messages), (
-                "Expected a warning mentioning 'SMILES' but got: " + str(caplog.messages)
-            )
+                out = PubChemIngest(cfg, client=mock_client, std=_std()).run()
+            assert isinstance(out, pd.DataFrame)
+            assert any("SMILES" in msg for msg in caplog.messages)
         finally:
             os.unlink(path)
-            if os.path.exists(out):
-                os.unlink(out)
+
+    def test_run_returns_dataframe_and_does_not_create_output(self):
+        path = _write_csv("id,PubChem CID\n1,702\n")
+        out_path = path.replace(".csv", "_out.csv")
+        mock_client = _StaticClient({
+            "SMILES": "CCO",
+            "MolecularWeight": "46.07",
+        })
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert isinstance(out, pd.DataFrame)
+            assert not os.path.exists(out_path)
+        finally:
+            os.unlink(path)
+
+    def test_strict_schema_by_default(self):
+        path = _write_csv("id,PubChem CID,source_note\n1,702,keep me only if asked\n")
+        mock_client = _StaticClient({
+            "SMILES": "CCO",
+            "ConnectivitySMILES": "CCO",
+            "MolecularWeight": "46.07",
+        })
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert list(out.columns) == [
+                "id", "PubChem CID", "SMILES", "SMILES_RDKit",
+                "ConnectivitySMILES", "MW",
+            ]
+        finally:
+            os.unlink(path)
+
+    def test_keep_extra_columns_preserves_metadata_but_not_index_artifacts(self):
+        path = _write_csv("Unnamed: 0,id,PubChem CID,source_note\n0,1,702,metadata\n")
+        mock_client = _StaticClient({"SMILES": "CCO"})
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path, keep_extra_columns=True),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert "source_note" in out.columns
+            assert "Unnamed: 0" not in out.columns
+        finally:
+            os.unlink(path)
 
 
-# ---------------------------------------------------------------------------
-# ChEMBLIngest
-# ---------------------------------------------------------------------------
-
-class TestChEMBLIngestEmptyDataFrame:
-    """ChEMBLIngest.run() raises ValueError on empty input."""
+class TestChEMBLIngest:
+    """ChEMBLIngest output contract tests."""
 
     def test_empty_input_raises(self):
-        """Zero-row input file raises ValueError before any API call."""
         path = _empty_csv(["id", "ChEMBL ID"])
-        out = path.replace(".csv", "_out.csv")
-        cfg = ChEMBLConfig(input_path=path, output_path=out)
+        cfg = ChEMBLConfig(input_path=path)
         mock_client = MagicMock()
         try:
             with pytest.raises(ValueError, match="zero rows"):
@@ -100,19 +135,46 @@ class TestChEMBLIngestEmptyDataFrame:
         finally:
             os.unlink(path)
 
+    def test_strict_schema_and_no_file_write(self):
+        path = _write_csv("id,ChEMBL ID,source_note\n1,CHEMBL1,metadata\n")
+        out_path = path.replace(".csv", "_out.csv")
+        mock_client = _StaticClient({
+            "pref_name": "Ethanol",
+            "canonical_smiles": "CCO",
+            "full_mwt": "46.07",
+        })
+        try:
+            out = ChEMBLIngest(
+                ChEMBLConfig(input_path=path),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert list(out.columns) == ["id", "ChEMBL ID", "name", "SMILES", "SMILES_RDKit", "MW"]
+            assert not os.path.exists(out_path)
+        finally:
+            os.unlink(path)
 
-# ---------------------------------------------------------------------------
-# SMILESPrep
-# ---------------------------------------------------------------------------
+    def test_keep_extra_columns_preserves_metadata_but_not_index_artifacts(self):
+        path = _write_csv("Unnamed_0,id,ChEMBL ID,source_note\n0,1,CHEMBL1,metadata\n")
+        mock_client = _StaticClient({"canonical_smiles": "CCO"})
+        try:
+            out = ChEMBLIngest(
+                ChEMBLConfig(input_path=path, keep_extra_columns=True),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert "source_note" in out.columns
+            assert "Unnamed_0" not in out.columns
+        finally:
+            os.unlink(path)
 
-class TestSMILESPrepEmptyDataFrame:
-    """SMILESPrep.run() raises ValueError on empty input."""
+
+class TestSMILESPrep:
+    """SMILESPrep output contract tests."""
 
     def test_empty_input_raises(self):
-        """Zero-row input file raises ValueError before processing."""
         path = _empty_csv(["id", "SMILES"])
-        out = path.replace(".csv", "_out.csv")
-        cfg = SMILESConfig(input_path=path, smiles_col="SMILES", output_path=out)
+        cfg = SMILESConfig(input_path=path, smiles_col="SMILES")
         mock_std = MagicMock()
         try:
             with pytest.raises(ValueError, match="zero rows"):
@@ -122,16 +184,37 @@ class TestSMILESPrepEmptyDataFrame:
             os.unlink(path)
 
     def test_empty_input_does_not_create_output_dir(self):
-        """Empty input must not create output directories."""
         path = _empty_csv(["id", "SMILES"])
         with tempfile.TemporaryDirectory() as tmpdir:
             out = os.path.join(tmpdir, "new_subdir", "out.csv")
-            cfg = SMILESConfig(input_path=path, smiles_col="SMILES", output_path=out)
+            cfg = SMILESConfig(input_path=path, smiles_col="SMILES")
             try:
                 with pytest.raises(ValueError):
                     SMILESPrep(cfg).run()
-                assert not os.path.exists(os.path.dirname(out)), (
-                    "Output directory must not be created when input is empty."
-                )
+                assert not os.path.exists(os.path.dirname(out))
             finally:
                 os.unlink(path)
+
+    def test_strict_schema_by_default_and_no_file_write(self):
+        path = _write_csv("id,SMILES,source_note\n1,CCO,metadata\n")
+        out_path = path.replace(".csv", "_out.csv")
+        try:
+            out = SMILESPrep(SMILESConfig(input_path=path, smiles_col="SMILES"), std=_std()).run()
+            assert isinstance(out, pd.DataFrame)
+            assert list(out.columns) == ["id", "SMILES", "SMILES_RDKit"]
+            assert "source_note" not in out.columns
+            assert not os.path.exists(out_path)
+        finally:
+            os.unlink(path)
+
+    def test_keep_extra_columns_preserves_metadata_but_not_index_artifacts(self):
+        path = _write_csv("Unnamed: 0,id,SMILES,source_note\n0,1,CCO,metadata\n")
+        try:
+            out = SMILESPrep(
+                SMILESConfig(input_path=path, smiles_col="SMILES", keep_extra_columns=True),
+                std=_std(),
+            ).run()
+            assert list(out.columns) == ["id", "SMILES", "SMILES_RDKit", "source_note"]
+            assert "Unnamed: 0" not in out.columns
+        finally:
+            os.unlink(path)
