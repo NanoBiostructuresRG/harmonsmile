@@ -4,34 +4,24 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from harmonsmile import PubChemConfig, ChEMBLConfig, SMILESConfig
+from harmonsmile.io import save_table
 from harmonsmile.pubchem import _PubChemClient
+import pandas as pd
 
 
 class TestPubChemConfigSecurity:
     """Security tests for PubChemConfig validation."""
 
-    def test_output_path_traversal_rejected(self):
-        """output_path with '..' raises ValueError."""
-        with pytest.raises(ValueError, match="traversal"):
-            PubChemConfig(
-                input_path="data/in.csv",
-                output_path="../../etc/cron.d/malicious",
-            )
-
     def test_input_path_traversal_rejected(self):
         """input_path with '..' raises ValueError."""
         with pytest.raises(ValueError, match="traversal"):
-            PubChemConfig(
-                input_path="../../etc/passwd",
-                output_path="results/out.csv",
-            )
+            PubChemConfig(input_path="../../etc/passwd")
 
     def test_invalid_pubchem_prop_rejected(self):
         """Unknown PubChem property raises ValueError."""
         with pytest.raises(ValueError, match="Invalid PubChem properties"):
             PubChemConfig(
                 input_path="data/in.csv",
-                output_path="results/out.csv",
                 props=("SMILES", "../../../etc"),
             )
 
@@ -40,7 +30,6 @@ class TestPubChemConfigSecurity:
         with pytest.raises(ValueError, match="Invalid PubChem properties"):
             PubChemConfig(
                 input_path="data/in.csv",
-                output_path="results/out.csv",
                 props=("FakeProp1", "FakeProp2"),
             )
 
@@ -48,18 +37,14 @@ class TestPubChemConfigSecurity:
         """All whitelisted properties are accepted."""
         cfg = PubChemConfig(
             input_path="data/in.csv",
-            output_path="results/out.csv",
             props=("SMILES", "MolecularWeight", "InChIKey", "XLogP"),
         )
         assert cfg.props == ("SMILES", "MolecularWeight", "InChIKey", "XLogP")
 
     def test_normal_paths_accepted(self):
         """Normal paths without traversal are accepted."""
-        cfg = PubChemConfig(
-            input_path="data/in.csv",
-            output_path="results/subdir/out.csv",
-        )
-        assert cfg.output_path == "results/subdir/out.csv"
+        cfg = PubChemConfig(input_path="data/in.csv")
+        assert cfg.input_path == "data/in.csv"
 
 
 class TestChEMBLConfigSecurity:
@@ -68,27 +53,12 @@ class TestChEMBLConfigSecurity:
     def test_input_path_traversal_rejected(self):
         """input_path with '..' raises ValueError."""
         with pytest.raises(ValueError, match="traversal"):
-            ChEMBLConfig(
-                input_path="../../etc/passwd",
-                output_path="results/out.csv",
-            )
-
-    def test_output_path_traversal_rejected(self):
-        """output_path with '..' raises ValueError."""
-        with pytest.raises(ValueError, match="traversal"):
-            ChEMBLConfig(
-                input_path="data/in.csv",
-                output_path="../../etc/cron.d/malicious",
-            )
+            ChEMBLConfig(input_path="../../etc/passwd")
 
     def test_normal_paths_accepted(self):
         """Normal paths without traversal are accepted."""
-        cfg = ChEMBLConfig(
-            input_path="data/in.csv",
-            output_path="results/out.csv",
-        )
+        cfg = ChEMBLConfig(input_path="data/in.csv")
         assert cfg.input_path == "data/in.csv"
-        assert cfg.output_path == "results/out.csv"
 
 
 class TestSMILESConfigSecurity:
@@ -99,16 +69,6 @@ class TestSMILESConfigSecurity:
         with pytest.raises(ValueError, match="traversal"):
             SMILESConfig(
                 input_path="../../etc/passwd",
-                output_path="results/out.csv",
-                smiles_col="SMILES",
-            )
-
-    def test_output_path_traversal_rejected(self):
-        """output_path with '..' raises ValueError."""
-        with pytest.raises(ValueError, match="traversal"):
-            SMILESConfig(
-                input_path="data/in.csv",
-                output_path="../../etc/cron.d/malicious",
                 smiles_col="SMILES",
             )
 
@@ -116,11 +76,17 @@ class TestSMILESConfigSecurity:
         """Normal paths without traversal are accepted."""
         cfg = SMILESConfig(
             input_path="data/in.csv",
-            output_path="results/out.csv",
             smiles_col="SMILES",
         )
         assert cfg.input_path == "data/in.csv"
-        assert cfg.output_path == "results/out.csv"
+
+
+class TestSaveTableSecurity:
+    """Security tests for the package write boundary."""
+
+    def test_output_path_traversal_rejected(self):
+        with pytest.raises(ValueError, match="traversal"):
+            save_table(pd.DataFrame({"a": [1]}), "../../etc/cron.d/malicious")
 
 
 class TestPubChemClientSecurity:

@@ -29,24 +29,20 @@ class PubChemConfig:
     input_path : str
         Path to the input file (CSV, TSV, XLSX). Must not be empty or
         contain path traversal patterns ('..').
-    output_path : str
-        Path to the output CSV file. Must not be empty or contain path
-        traversal patterns ('..').
-    error_log : str, optional
-        Path to the error log file. Defaults to 'logs/errors.txt'.
     cid_col : str, optional
         Name of the PubChem CID column. Must not be empty or
         whitespace-only. Defaults to 'PubChem CID'.
     props : tuple of str, optional
         PubChem properties to fetch. Must contain at least one valid
         property name. Defaults to all available properties.
+    keep_extra_columns : bool, optional
+        Preserve input metadata columns outside the declared output schema.
+        Defaults to False.
 
     Raises
     ------
     ValueError
         If ``input_path`` is empty or contains '..'.
-    ValueError
-        If ``output_path`` is empty or contains '..'.
     ValueError
         If ``cid_col`` is empty or whitespace-only.
     ValueError
@@ -57,13 +53,10 @@ class PubChemConfig:
     >>> from harmonsmile import PubChemConfig
     >>> cfg = PubChemConfig(
     ...     input_path="examples/example_pubchem.csv",
-    ...     output_path="results/pubchem_harmonized.csv",
     ... )
     """
 
     input_path: str
-    output_path: str
-    error_log: str = "logs/errors.txt"
     cid_col: str = "PubChem CID"
     props: tuple[str, ...] = (
         "SMILES", "ConnectivitySMILES", "MolecularFormula",
@@ -71,16 +64,13 @@ class PubChemConfig:
         "Charge", "HBondDonorCount", "HBondAcceptorCount",
         "RotatableBondCount", "HeavyAtomCount",
     )
+    keep_extra_columns: bool = False
 
     def __post_init__(self) -> None:
         if not self.input_path:
             raise ValueError("input_path must not be empty.")
         if ".." in self.input_path:
             raise ValueError("input_path must not contain path traversal patterns ('..').")
-        if not self.output_path:
-            raise ValueError("output_path must not be empty.")
-        if ".." in self.output_path:
-            raise ValueError("output_path must not contain path traversal patterns ('..').")
         if not self.cid_col or not self.cid_col.strip():
             raise ValueError("cid_col must not be empty.")
         if not self.props:
@@ -88,6 +78,8 @@ class PubChemConfig:
         invalid = {p for p in self.props if p not in VALID_PUBCHEM_PROPS}
         if invalid:
             raise ValueError(f"Invalid PubChem properties: {sorted(invalid)}")
+        if not isinstance(self.keep_extra_columns, bool):
+            raise ValueError("keep_extra_columns must be a bool.")
 
 
 @dataclass(frozen=True)
@@ -100,21 +92,17 @@ class ChEMBLConfig:
     input_path : str
         Path to the input file (CSV, TSV, XLSX). Must not be empty or
         contain path traversal patterns ('..').
-    output_path : str
-        Path to the output CSV file. Must not be empty or contain path
-        traversal patterns ('..').
     chembl_id_col : str, optional
         Name of the ChEMBL ID column in the input file. Must not be
         empty or whitespace-only. Defaults to 'ChEMBL ID'.
-    error_log : str, optional
-        Path to the error log file. Defaults to 'logs/errors.txt'.
+    keep_extra_columns : bool, optional
+        Preserve input metadata columns outside the declared output schema.
+        Defaults to False.
 
     Raises
     ------
     ValueError
         If ``input_path`` is empty or contains '..'.
-    ValueError
-        If ``output_path`` is empty or contains '..'.
     ValueError
         If ``chembl_id_col`` is empty or whitespace-only.
 
@@ -123,26 +111,22 @@ class ChEMBLConfig:
     >>> from harmonsmile import ChEMBLConfig
     >>> cfg = ChEMBLConfig(
     ...     input_path="examples/example_chembl.csv",
-    ...     output_path="results/chembl_harmonized.csv",
     ... )
     """
 
     input_path: str
-    output_path: str
     chembl_id_col: str = "ChEMBL ID"
-    error_log: str = "logs/errors.txt"
+    keep_extra_columns: bool = False
 
     def __post_init__(self) -> None:
         if not self.input_path:
             raise ValueError("input_path must not be empty.")
         if ".." in self.input_path:
             raise ValueError("input_path must not contain path traversal patterns ('..').")
-        if not self.output_path:
-            raise ValueError("output_path must not be empty.")
-        if ".." in self.output_path:
-            raise ValueError("output_path must not contain path traversal patterns ('..').")
         if not self.chembl_id_col or not self.chembl_id_col.strip():
             raise ValueError("chembl_id_col must not be empty.")
+        if not isinstance(self.keep_extra_columns, bool):
+            raise ValueError("keep_extra_columns must be a bool.")
 
 
 @dataclass(frozen=True)
@@ -155,21 +139,17 @@ class SMILESConfig:
     input_path : str
         Path to the input file (CSV, TSV, XLSX). Must not be empty or
         contain path traversal patterns ('..').
-    output_path : str
-        Path to the output CSV file. Must not be empty or contain path
-        traversal patterns ('..').
     smiles_col : str
         Name of the column containing SMILES strings. Must not be
         empty or whitespace-only.
-    error_log : str, optional
-        Path to the error log file. Defaults to 'logs/errors.txt'.
+    keep_extra_columns : bool, optional
+        Preserve input metadata columns outside the declared output schema.
+        Defaults to False.
 
     Raises
     ------
     ValueError
         If ``input_path`` is empty or contains '..'.
-    ValueError
-        If ``output_path`` is empty or contains '..'.
     ValueError
         If ``smiles_col`` is empty or whitespace-only.
 
@@ -179,23 +159,19 @@ class SMILESConfig:
     >>> cfg = SMILESConfig(
     ...     input_path="examples/example_smiles.csv",
     ...     smiles_col="SMILES",
-    ...     output_path="results/smiles_harmonized.csv",
     ... )
     """
 
     input_path: str
-    output_path: str
     smiles_col: str
-    error_log: str = "logs/errors.txt"
+    keep_extra_columns: bool = False
 
     def __post_init__(self) -> None:
         if not self.input_path:
             raise ValueError("input_path must not be empty.")
         if ".." in self.input_path:
             raise ValueError("input_path must not contain path traversal patterns ('..').")
-        if not self.output_path:
-            raise ValueError("output_path must not be empty.")
-        if ".." in self.output_path:
-            raise ValueError("output_path must not contain path traversal patterns ('..').")
         if not self.smiles_col or not self.smiles_col.strip():
             raise ValueError("smiles_col must not be empty.")
+        if not isinstance(self.keep_extra_columns, bool):
+            raise ValueError("keep_extra_columns must be a bool.")

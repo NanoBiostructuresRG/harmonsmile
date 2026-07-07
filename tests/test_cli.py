@@ -1,51 +1,21 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
-"""
-Tests for harmonsmile._cli
-==========================
-
-Coverage
---------
-_parse()
-    - Batch mode: PubChem, ChEMBL, SMILES
-    - Single Entry mode: --pubchem-cid, --chembl-id
-    - Mutual exclusion: --pubchem-cid vs --pubchem-in
-    - Mutual exclusion: --chembl-id vs --chembl-in
-    - Paired-arg validation: pubchem, chembl, smiles
-    - --smiles-col required when --smiles-in is present
-
-main()
-    - Batch PubChem: calls PubChemIngest.run()
-    - Batch ChEMBL: calls ChEMBLIngest.run()
-    - Batch SMILES: calls SMILESPrep.run()
-    - Single Entry PubChem: temp file lifecycle + correct output path
-    - Single Entry ChEMBL: temp file lifecycle + correct output path
-    - No arguments: raises SystemExit with helpful message
-    - results/ directory created automatically
-"""
+"""Tests for harmonsmile._cli."""
 
 from __future__ import annotations
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
+import harmonsmile._cli as cli
 from harmonsmile._cli import _parse, main
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _argv(*args: str) -> list[str]:
-    """Return a plain list of strings (avoids tuple mistakes)."""
+    """Return a plain list of strings."""
     return list(args)
-
-
-# ===========================================================================
-# _parse() — Batch modes
-# ===========================================================================
 
 
 class TestParseBatchPubChem:
@@ -120,11 +90,6 @@ class TestParseBatchSMILES:
             _parse(_argv("--smiles-in", "in.csv", "--smiles-out", "out.csv"))
 
 
-# ===========================================================================
-# _parse() — Single Entry mode
-# ===========================================================================
-
-
 class TestParseSingleEntry:
     def test_pubchem_cid(self):
         args = _parse(_argv("--pubchem-cid", "2723949"))
@@ -153,104 +118,88 @@ class TestParseSingleEntry:
             ))
 
 
-# ===========================================================================
-# main() — pipeline dispatch (all pipelines mocked)
-# ===========================================================================
-
-
 @pytest.fixture()
 def mock_pipelines():
-    """Patch all three pipeline classes inside _cli so no real I/O occurs."""
+    """Patch all three pipeline classes inside _cli so no real network occurs."""
     with (
         patch("harmonsmile._cli.PubChemIngest") as MockPubChem,
         patch("harmonsmile._cli.ChEMBLIngest") as MockChEMBL,
         patch("harmonsmile._cli.SMILESPrep") as MockSMILES,
-        patch("harmonsmile._cli._ensure_dirs"),
+        patch("harmonsmile._cli.save_table") as mock_save,
     ):
-        MockPubChem.return_value.run.return_value = pd.DataFrame()
-        MockChEMBL.return_value.run.return_value = pd.DataFrame()
-        MockSMILES.return_value.run.return_value = pd.DataFrame()
-        yield MockPubChem, MockChEMBL, MockSMILES
+        MockPubChem.return_value.run.return_value = pd.DataFrame({"kind": ["pubchem"]})
+        MockChEMBL.return_value.run.return_value = pd.DataFrame({"kind": ["chembl"]})
+        MockSMILES.return_value.run.return_value = pd.DataFrame({"kind": ["smiles"]})
+        yield MockPubChem, MockChEMBL, MockSMILES, mock_save
 
 
 class TestMainBatchPubChem:
-    def test_pubchem_batch_calls_pipeline(self, mock_pipelines):
-        MockPubChem, _, _ = mock_pipelines
+    def test_pubchem_batch_calls_run_then_save_table(self, mock_pipelines):
+        MockPubChem, _, _, mock_save = mock_pipelines
         main(_argv("--pubchem-in", "in.csv", "--pubchem-out", "out.csv"))
         MockPubChem.assert_called_once()
         MockPubChem.return_value.run.assert_called_once()
+        mock_save.assert_called_once()
+        assert mock_save.call_args[0][1] == "out.csv"
 
-    def test_pubchem_batch_config_receives_paths(self, mock_pipelines):
-        MockPubChem, _, _ = mock_pipelines
+    def test_pubchem_batch_config_receives_no_output_path(self, mock_pipelines):
+        MockPubChem, _, _, _ = mock_pipelines
         main(_argv("--pubchem-in", "in.csv", "--pubchem-out", "out.csv"))
         cfg_arg = MockPubChem.call_args[0][0]
         assert cfg_arg.input_path == "in.csv"
-        assert cfg_arg.output_path == "out.csv"
+        assert not hasattr(cfg_arg, "output_path")
 
 
 class TestMainBatchChEMBL:
-    def test_chembl_batch_calls_pipeline(self, mock_pipelines):
-        _, MockChEMBL, _ = mock_pipelines
+    def test_chembl_batch_calls_run_then_save_table(self, mock_pipelines):
+        _, MockChEMBL, _, mock_save = mock_pipelines
         main(_argv("--chembl-in", "in.csv", "--chembl-out", "out.csv"))
         MockChEMBL.assert_called_once()
         MockChEMBL.return_value.run.assert_called_once()
+        assert mock_save.call_args[0][1] == "out.csv"
 
-    def test_chembl_batch_config_receives_paths(self, mock_pipelines):
-        _, MockChEMBL, _ = mock_pipelines
+    def test_chembl_batch_config_receives_no_output_path(self, mock_pipelines):
+        _, MockChEMBL, _, _ = mock_pipelines
         main(_argv("--chembl-in", "in.csv", "--chembl-out", "out.csv"))
         cfg_arg = MockChEMBL.call_args[0][0]
         assert cfg_arg.input_path == "in.csv"
-        assert cfg_arg.output_path == "out.csv"
+        assert not hasattr(cfg_arg, "output_path")
 
 
 class TestMainBatchSMILES:
-    def test_smiles_batch_calls_pipeline(self, mock_pipelines):
-        _, _, MockSMILES = mock_pipelines
+    def test_smiles_batch_calls_run_then_save_table(self, mock_pipelines):
+        _, _, MockSMILES, mock_save = mock_pipelines
         main(_argv("--smiles-in", "in.csv", "--smiles-col", "SMILES", "--smiles-out", "out.csv"))
         MockSMILES.assert_called_once()
         MockSMILES.return_value.run.assert_called_once()
+        assert mock_save.call_args[0][1] == "out.csv"
 
-    def test_smiles_batch_config_receives_args(self, mock_pipelines):
-        _, _, MockSMILES = mock_pipelines
+    def test_smiles_batch_config_receives_args_without_output_path(self, mock_pipelines):
+        _, _, MockSMILES, _ = mock_pipelines
         main(_argv("--smiles-in", "in.csv", "--smiles-col", "SMILES", "--smiles-out", "out.csv"))
         cfg_arg = MockSMILES.call_args[0][0]
         assert cfg_arg.input_path == "in.csv"
         assert cfg_arg.smiles_col == "SMILES"
-        assert cfg_arg.output_path == "out.csv"
-
-
-# ===========================================================================
-# main() — Single Entry modes
-# ===========================================================================
+        assert not hasattr(cfg_arg, "output_path")
 
 
 class TestMainSingleEntryPubChem:
-    def test_pubchem_cid_calls_pipeline(self, mock_pipelines):
-        MockPubChem, _, _ = mock_pipelines
+    def test_pubchem_cid_calls_run_then_saves_default_path(self, mock_pipelines):
+        MockPubChem, _, _, mock_save = mock_pipelines
         with patch("harmonsmile._cli.os.unlink"):
             main(_argv("--pubchem-cid", "2723949"))
         MockPubChem.assert_called_once()
         MockPubChem.return_value.run.assert_called_once()
-
-    def test_pubchem_cid_output_path(self, mock_pipelines):
-        MockPubChem, _, _ = mock_pipelines
-        with patch("harmonsmile._cli.os.unlink"):
-            main(_argv("--pubchem-cid", "2723949"))
-        cfg_arg = MockPubChem.call_args[0][0]
-        assert cfg_arg.output_path == os.path.join("results", "CID2723949_harmonsmile.csv")
+        assert mock_save.call_args[0][1] == os.path.join("results", "CID2723949_harmonsmile.csv")
 
     def test_pubchem_cid_temp_file_deleted(self, mock_pipelines):
-        """os.unlink must be called on the temp file after run()."""
-        MockPubChem, _, _ = mock_pipelines
         with patch("harmonsmile._cli.os.unlink") as mock_unlink:
             main(_argv("--pubchem-cid", "2723949"))
         mock_unlink.assert_called_once()
-        unlinked_path = mock_unlink.call_args[0][0]
-        assert unlinked_path.endswith(".csv")
+        assert mock_unlink.call_args[0][0].endswith(".csv")
 
     def test_pubchem_cid_temp_file_contains_correct_cid(self, mock_pipelines):
-        """The one-row temp CSV passed to PubChemIngest must contain the CID."""
-        MockPubChem, _, _ = mock_pipelines
+        MockPubChem, _, _, _ = mock_pipelines
         captured_df: list[pd.DataFrame] = []
 
         def capture_on_run():
@@ -263,39 +212,28 @@ class TestMainSingleEntryPubChem:
         with patch("harmonsmile._cli.os.unlink"):
             main(_argv("--pubchem-cid", "2723949"))
 
-        assert len(captured_df) == 1
         df = captured_df[0]
         assert "PubChem CID" in df.columns
         assert str(df["PubChem CID"].iloc[0]) == "2723949"
 
 
 class TestMainSingleEntryChEMBL:
-    def test_chembl_id_calls_pipeline(self, mock_pipelines):
-        _, MockChEMBL, _ = mock_pipelines
+    def test_chembl_id_calls_run_then_saves_default_path(self, mock_pipelines):
+        _, MockChEMBL, _, mock_save = mock_pipelines
         with patch("harmonsmile._cli.os.unlink"):
             main(_argv("--chembl-id", "CHEMBL294199"))
         MockChEMBL.assert_called_once()
         MockChEMBL.return_value.run.assert_called_once()
-
-    def test_chembl_id_output_path(self, mock_pipelines):
-        _, MockChEMBL, _ = mock_pipelines
-        with patch("harmonsmile._cli.os.unlink"):
-            main(_argv("--chembl-id", "CHEMBL294199"))
-        cfg_arg = MockChEMBL.call_args[0][0]
-        assert cfg_arg.output_path == os.path.join("results", "CHEMBL294199_harmonsmile.csv")
+        assert mock_save.call_args[0][1] == os.path.join("results", "CHEMBL294199_harmonsmile.csv")
 
     def test_chembl_id_temp_file_deleted(self, mock_pipelines):
-        """os.unlink must be called on the temp file after run()."""
-        _, MockChEMBL, _ = mock_pipelines
         with patch("harmonsmile._cli.os.unlink") as mock_unlink:
             main(_argv("--chembl-id", "CHEMBL294199"))
         mock_unlink.assert_called_once()
-        unlinked_path = mock_unlink.call_args[0][0]
-        assert unlinked_path.endswith(".csv")
+        assert mock_unlink.call_args[0][0].endswith(".csv")
 
     def test_chembl_id_temp_file_contains_correct_id(self, mock_pipelines):
-        """The one-row temp CSV passed to ChEMBLIngest must contain the ChEMBL ID."""
-        _, MockChEMBL, _ = mock_pipelines
+        _, MockChEMBL, _, _ = mock_pipelines
         captured_df: list[pd.DataFrame] = []
 
         def capture_on_run():
@@ -308,48 +246,33 @@ class TestMainSingleEntryChEMBL:
         with patch("harmonsmile._cli.os.unlink"):
             main(_argv("--chembl-id", "CHEMBL294199"))
 
-        assert len(captured_df) == 1
         df = captured_df[0]
         assert "ChEMBL ID" in df.columns
         assert df["ChEMBL ID"].iloc[0] == "CHEMBL294199"
 
 
-# ===========================================================================
-# main() — results/ directory auto-creation
-# ===========================================================================
+class TestMainOutputDirs:
+    def test_ensure_dirs_removed(self):
+        assert not hasattr(cli, "_ensure_dirs")
 
+    def test_save_cli_output_removed(self):
+        assert not hasattr(cli, "_save_cli_output")
 
-class TestMainResultsDir:
-    def test_results_dir_created_for_pubchem_cid(self):
-        """_ensure_dirs() must be called when --pubchem-cid is used."""
+    def test_unsafe_output_path_rejected_without_creating_parent(self, tmp_path):
+        blocked_parent = tmp_path / "blocked"
+        unsafe_output = blocked_parent / ".." / "outside.csv"
         with (
-            patch("harmonsmile._cli.PubChemIngest") as MockPubChem,
-            patch("harmonsmile._cli.ChEMBLIngest"),
-            patch("harmonsmile._cli.SMILESPrep"),
-            patch("harmonsmile._cli._ensure_dirs") as mock_ensure,
-            patch("harmonsmile._cli.os.unlink"),
+            patch("harmonsmile._cli.SMILESPrep") as MockSMILES,
+            pytest.raises(ValueError, match="traversal"),
         ):
-            MockPubChem.return_value.run.return_value = pd.DataFrame()
-            main(_argv("--pubchem-cid", "123"))
-        mock_ensure.assert_called_once()
-
-    def test_results_dir_created_for_chembl_id(self):
-        """_ensure_dirs() must be called when --chembl-id is used."""
-        with (
-            patch("harmonsmile._cli.PubChemIngest"),
-            patch("harmonsmile._cli.ChEMBLIngest") as MockChEMBL,
-            patch("harmonsmile._cli.SMILESPrep"),
-            patch("harmonsmile._cli._ensure_dirs") as mock_ensure,
-            patch("harmonsmile._cli.os.unlink"),
-        ):
-            MockChEMBL.return_value.run.return_value = pd.DataFrame()
-            main(_argv("--chembl-id", "CHEMBL1"))
-        mock_ensure.assert_called_once()
-
-
-# ===========================================================================
-# main() — no arguments
-# ===========================================================================
+            MockSMILES.return_value.run.return_value = pd.DataFrame({"SMILES": ["CCO"]})
+            main(_argv(
+                "--smiles-in", "in.csv",
+                "--smiles-col", "SMILES",
+                "--smiles-out", os.fspath(unsafe_output),
+            ))
+        assert not blocked_parent.exists()
+        assert not (tmp_path / "outside.csv").exists()
 
 
 class TestMainNoArgs:
@@ -359,5 +282,6 @@ class TestMainNoArgs:
         assert exc_info.value.code != 0 or isinstance(exc_info.value.code, str)
 
     def test_no_args_message_mentions_flags(self, capsys):
-        with pytest.raises(SystemExit):
+        with pytest.raises(SystemExit) as exc_info:
             main(_argv())
+        assert "--pubchem-in" in str(exc_info.value)

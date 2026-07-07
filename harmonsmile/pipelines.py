@@ -9,17 +9,32 @@ compound data, :class:`ChEMBLIngest` for ChEMBL compound data, and
 
 from __future__ import annotations
 import logging
-import os
 
 import pandas as pd
 
 from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
-from .io import load_table, save_table
+from .io import load_table, _drop_accidental_index_columns
 from .chembl import _ChEMBLClient
 from .pubchem import _PubChemClient
 from .standardize import RDKitStandardizer
 
 logger = logging.getLogger(__name__)
+
+
+def _select_output_columns(
+    df: pd.DataFrame,
+    desired: list[str],
+    keep_extra: bool = False,
+) -> pd.DataFrame:
+    """
+    Apply the declared output schema and remove accidental pandas index columns.
+    """
+    cleaned = _drop_accidental_index_columns(df)
+    present = [c for c in desired if c in cleaned.columns]
+    if keep_extra:
+        extras = [c for c in cleaned.columns if c not in present]
+        return cleaned[present + extras]
+    return cleaned[present]
 
 
 class PubChemIngest:
@@ -43,7 +58,6 @@ class PubChemIngest:
     >>> from harmonsmile import PubChemIngest, PubChemConfig
     >>> cfg = PubChemConfig(
     ...     input_path="examples/example_pubchem.csv",
-    ...     output_path="results/pubchem_harmonized.csv",
     ... )
     >>> df = PubChemIngest(cfg).run()
     """
@@ -67,8 +81,8 @@ class PubChemIngest:
         Returns
         -------
         pd.DataFrame
-            DataFrame with original columns plus fetched properties
-            and standardized SMILES_RDKit column.
+            DataFrame following the PubChem output schema. Extra metadata
+            columns are included only when keep_extra_columns=True.
 
         Raises
         ------
@@ -117,19 +131,19 @@ class PubChemIngest:
                    "RotatableBondCount", "HeavyAtomCount",
                    ]
 
-        present = [c for c in desired if c in out.columns]
-        others  = [c for c in out.columns if c not in present]
-
         if "MW" in out.columns:
             out["MW"] = pd.to_numeric(out["MW"], errors="coerce")
 
-        out = out[present + others]
-        save_table(out, self.cfg.output_path)
+        out = _select_output_columns(
+            out,
+            desired,
+            keep_extra=self.cfg.keep_extra_columns,
+        )
 
         n     = len(out)
         n_src = out["SMILES"].notna().sum() if "SMILES" in out.columns else 0
         n_rd  = out["SMILES_RDKit"].notna().sum() if "SMILES_RDKit" in out.columns else 0
-        logger.info("[OK] %s | source SMILES: %s/%s | RDKit: %s/%s", self.cfg.output_path, n_src, n, n_rd, n)
+        logger.info("[OK] PubChemIngest | source SMILES: %s/%s | RDKit: %s/%s", n_src, n, n_rd, n)
         return out
 
 
@@ -157,7 +171,7 @@ class ChEMBLIngest:
 
     Fetches properties from the ChEMBL REST API by ChEMBL ID, applies
     RDKit canonicalization to produce a standardized SMILES_RDKit column,
-    and saves the result as a CSV file.
+    and returns the result as a DataFrame.
 
     Parameters
     ----------
@@ -173,7 +187,6 @@ class ChEMBLIngest:
     >>> from harmonsmile import ChEMBLIngest, ChEMBLConfig
     >>> cfg = ChEMBLConfig(
     ...     input_path="examples/example_chembl.csv",
-    ...     output_path="results/chembl_harmonized.csv",
     ... )
     >>> df = ChEMBLIngest(cfg).run()
     """
@@ -197,8 +210,8 @@ class ChEMBLIngest:
         Returns
         -------
         pd.DataFrame
-            DataFrame with original columns plus fetched and renamed
-            ChEMBL properties and a standardized SMILES_RDKit column.
+            DataFrame following the ChEMBL output schema. Extra metadata
+            columns are included only when keep_extra_columns=True.
 
         Raises
         ------
@@ -246,9 +259,6 @@ class ChEMBLIngest:
             "ALogP", "TPSA", "HBA", "HBD",
             "RotatableBonds", "HeavyAtoms", "QED", "Ro5Violations",
         ]
-        present = [c for c in desired if c in out.columns]
-        others  = [c for c in out.columns if c not in present]
-
         _numeric_cols = [
             "MW", "ALogP", "TPSA", "HBA", "HBD",
             "RotatableBonds", "HeavyAtoms", "QED", "Ro5Violations",
@@ -257,12 +267,15 @@ class ChEMBLIngest:
             if col in out.columns:
                 out[col] = pd.to_numeric(out[col], errors="coerce")
 
-        out = out[present + others]
-        save_table(out, self.cfg.output_path)
+        out = _select_output_columns(
+            out,
+            desired,
+            keep_extra=self.cfg.keep_extra_columns,
+        )
 
         n    = len(out)
         n_rd = out["SMILES_RDKit"].notna().sum() if "SMILES_RDKit" in out.columns else 0
-        logger.info("[OK] %s | RDKit: %s/%s", self.cfg.output_path, n_rd, n)
+        logger.info("[OK] ChEMBLIngest | RDKit: %s/%s", n_rd, n)
         return out
 
 
@@ -271,7 +284,7 @@ class SMILESPrep:
     Pipeline for harmonizing SMILES from any tabular source.
 
     Reads a tabular file, applies RDKit canonicalization to the specified
-    SMILES column, and saves the result with an appended SMILES_RDKit column.
+    SMILES column, and returns the result with an appended SMILES_RDKit column.
 
     Parameters
     ----------
@@ -286,7 +299,6 @@ class SMILESPrep:
     >>> cfg = SMILESConfig(
     ...     input_path="examples/example_smiles.csv",
     ...     smiles_col="SMILES",
-    ...     output_path="results/smiles_harmonized.csv",
     ... )
     >>> df = SMILESPrep(cfg).run()
     """
@@ -306,7 +318,8 @@ class SMILESPrep:
         Returns
         -------
         pd.DataFrame
-            DataFrame with original columns plus standardized SMILES_RDKit column.
+            DataFrame following the SMILES output schema. Extra metadata
+            columns are included only when keep_extra_columns=True.
 
         Raises
         ------
@@ -329,8 +342,13 @@ class SMILESPrep:
             )
 
         df["SMILES_RDKit"] = df[self.cfg.smiles_col].apply(self.std.to_iso_kek)
-        save_table(df, self.cfg.output_path)
+        desired = ["id", self.cfg.smiles_col, "SMILES_RDKit"]
+        out = _select_output_columns(
+            df,
+            desired,
+            keep_extra=self.cfg.keep_extra_columns,
+        )
 
-        n, n_ok = len(df), df["SMILES_RDKit"].notna().sum()
-        logger.info("[OK] %s | RDKit: %s/%s", self.cfg.output_path, n_ok, n)
-        return df
+        n, n_ok = len(out), out["SMILES_RDKit"].notna().sum()
+        logger.info("[OK] SMILESPrep | RDKit: %s/%s", n_ok, n)
+        return out

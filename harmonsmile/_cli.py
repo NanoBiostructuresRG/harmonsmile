@@ -33,6 +33,7 @@ import tempfile
 import pandas as pd
 
 from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
+from .io import save_table
 from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 
 
@@ -82,11 +83,6 @@ example:
 
 Run 'harmonsmile --help' for full usage.
 """
-
-
-def _ensure_dirs() -> None:
-    for d in ("logs", "results"):
-        os.makedirs(d, exist_ok=True)
 
 
 def _parse(argv: list[str] | None = None) -> argparse.Namespace:
@@ -178,51 +174,47 @@ def main(argv: list[str] | None = None) -> None:
     ran_any = False
 
     if args.pub_in and args.pub_out:
-        _ensure_dirs()
         cfg = PubChemConfig(
             input_path=args.pub_in,
-            output_path=args.pub_out,
             cid_col=args.pubchem_cidcol,
         )
-        PubChemIngest(cfg).run()
+        df = PubChemIngest(cfg).run()
+        save_table(df, args.pub_out)
         ran_any = True
 
     if args.chembl_in and args.chembl_out:
-        _ensure_dirs()
         cfg = ChEMBLConfig(
             input_path=args.chembl_in,
-            output_path=args.chembl_out,
             chembl_id_col=args.chembl_idcol,
         )
-        ChEMBLIngest(cfg).run()
+        df = ChEMBLIngest(cfg).run()
+        save_table(df, args.chembl_out)
         ran_any = True
 
     if args.smiles_in and args.smiles_out and args.smiles_col:
-        _ensure_dirs()
         cfg = SMILESConfig(
             input_path=args.smiles_in,
             smiles_col=args.smiles_col,
-            output_path=args.smiles_out,
         )
-        SMILESPrep(cfg).run()
+        df = SMILESPrep(cfg).run()
+        save_table(df, args.smiles_out)
         ran_any = True
 
     if args.pubchem_cid:
-        _ensure_dirs()
         cid = args.pubchem_cid
         out_path = os.path.join("results", f"CID{cid}_harmonsmile.csv")
         tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
         tmp.close()
         try:
             pd.DataFrame([{"id": 1, "PubChem CID": cid}]).to_csv(tmp.name, index=False)
-            cfg = PubChemConfig(input_path=tmp.name, output_path=out_path)
-            PubChemIngest(cfg).run()
+            cfg = PubChemConfig(input_path=tmp.name)
+            df = PubChemIngest(cfg).run()
+            save_table(df, out_path)
         finally:
             os.unlink(tmp.name)
         ran_any = True
 
     if args.chembl_id:
-        _ensure_dirs()
         chembl_id = args.chembl_id
         out_path = os.path.join("results", f"{chembl_id}_harmonsmile.csv")
         tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
@@ -231,9 +223,9 @@ def main(argv: list[str] | None = None) -> None:
             pd.DataFrame([{"id": 1, "ChEMBL ID": chembl_id}]).to_csv(tmp.name, index=False)
             cfg = ChEMBLConfig(
                 input_path=tmp.name,
-                output_path=out_path,
             )
-            ChEMBLIngest(cfg).run()
+            df = ChEMBLIngest(cfg).run()
+            save_table(df, out_path)
         finally:
             os.unlink(tmp.name)
         ran_any = True

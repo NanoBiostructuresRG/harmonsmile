@@ -42,37 +42,36 @@ Standardize a single SMILES string:
 
 Harmonize any file with a SMILES column:
 
->>> from harmonsmile import SMILESPrep, SMILESConfig
+>>> from harmonsmile import SMILESPrep, SMILESConfig, save_table
 >>> cfg = SMILESConfig(
 ...     input_path="examples/example_smiles.csv",
 ...     smiles_col="SMILES",
-...     output_path="results/smiles_harmonized.csv",
 ... )
->>> SMILESPrep(cfg).run()
+>>> df = SMILESPrep(cfg).run()
+>>> save_table(df, "results/smiles_harmonized.csv")
 
 Fetch and harmonize PubChem data:
 
->>> from harmonsmile import PubChemIngest, PubChemConfig
+>>> from harmonsmile import PubChemIngest, PubChemConfig, save_table
 >>> cfg = PubChemConfig(
 ...     input_path="examples/example_pubchem.csv",
-...     output_path="results/pubchem_harmonized.csv",
 ... )
->>> PubChemIngest(cfg).run()
+>>> df = PubChemIngest(cfg).run()
+>>> save_table(df, "results/pubchem_harmonized.csv")
 
 Fetch and harmonize ChEMBL data:
 
->>> from harmonsmile import ChEMBLIngest, ChEMBLConfig
+>>> from harmonsmile import ChEMBLIngest, ChEMBLConfig, save_table
 >>> cfg = ChEMBLConfig(
 ...     input_path="examples/example_chembl.csv",
-...     output_path="results/chembl_harmonized.csv",
 ... )
->>> ChEMBLIngest(cfg).run()
+>>> df = ChEMBLIngest(cfg).run()
+>>> save_table(df, "results/chembl_harmonized.csv")
 """
 
 from .standardize import RDKitStandardizer
 from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
-from .pubchem import PubChemClient
 from .io import load_table, save_table
 from .version import __version__, PROJECT_NAME, PROJECT_VERSION, PROJECT_STATUS
 
