@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.5] - 2026-07-06
+
+### Breaking changes
+- Pipeline `.run()` methods now return `pandas.DataFrame` only and no longer write output files.
+- Removed `output_path` from `PubChemConfig`, `ChEMBLConfig`, and `SMILESConfig`.
+- Removed unused `error_log` from pipeline configuration classes.
+- Output schemas are now strict by default; use `keep_extra_columns=True` to preserve extra metadata columns.
+
+### Changed
+- CLI commands now persist outputs explicitly through `save_table(df, path)` after running the pipeline.
+- `save_table()` is now the single package write boundary and validates traversal paths before creating directories.
+- `environment.yml` now installs the local editable package with `-e .[dev]` instead of the obsolete `harmonsmile==0.1.0`.
+
+### Fixed
+- Prevented accidental pandas index columns such as `Unnamed: 0` and `Unnamed_0` from propagating through inputs or outputs.
+- Removed the public `PubChemClient` alias while keeping `_PubChemClient` internal.
+- Strengthened CI checks so editable, wheel, and sdist installs assert that `PubChemClient` is not public.
+
+---
+
 ## [0.2.4] - 2026-06-05
 
 ### Added
@@ -333,7 +353,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[0.2.4]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.3...dev/v0.2.4
+[0.2.5]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.4...v0.2.5
+[0.2.4]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.0...v0.2.1
