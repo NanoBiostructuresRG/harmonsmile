@@ -7,7 +7,7 @@ from harmonsmile.pubchem import _PubChemClient
 
 
 class TestPubChemClientInit:
-    """Tests for PubChemClient initialization."""
+    """Tests for internal PubChem client initialization."""
 
     def test_default_values(self):
         """Default sleep and retries are set correctly."""
@@ -31,7 +31,7 @@ class TestPubChemClientInit:
 
 
 class TestFetchProps:
-    """Tests for PubChemClient.fetch_props."""
+    """Tests for internal PubChem client fetch_props."""
 
     def test_empty_cid_returns_none_values(self):
         """Empty CID returns dict with None values without network call."""

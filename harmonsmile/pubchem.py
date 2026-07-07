@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """
-PubChem REST API client for harmonsmile.
+Internal PubChem REST API client for harmonsmile.
 
-Provides :class:`PubChemClient` for fetching compound properties from the
-PubChem REST API, with exponential backoff and persistent connection reuse.
+Provides :class:`_PubChemClient` for pipeline-internal PubChem REST API
+access, with exponential backoff and persistent connection reuse.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ class _PubChemClient:
 
     Examples
     --------
-    >>> client = PubChemClient()
+    >>> client = _PubChemClient()
     >>> props = client.fetch_props("2723949", ["SMILES", "MolecularWeight"])
     >>> client.close()
     """
@@ -72,7 +72,7 @@ class _PubChemClient:
 
         Examples
         --------
-        >>> client = PubChemClient()
+        >>> client = _PubChemClient()
         >>> client.fetch_props("2723949", ["SMILES", "MolecularWeight"])  # doctest: +SKIP
         {'SMILES': 'CC(=S)N', 'MolecularWeight': '74.15'}
         >>> client.fetch_props("", ["SMILES"])
@@ -106,7 +106,7 @@ class _PubChemClient:
 
         Returns
         -------
-        PubChemClient
+        _PubChemClient
             The client instance itself.
         """
         return self
@@ -141,11 +141,7 @@ class _PubChemClient:
 
         Examples
         --------
-        >>> client = PubChemClient()
+        >>> client = _PubChemClient()
         >>> client.close()
         """
         self._session.close()
-
-
-# Deprecated alias — will be removed in a future release
-PubChemClient = _PubChemClient

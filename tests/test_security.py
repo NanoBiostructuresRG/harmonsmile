@@ -90,7 +90,7 @@ class TestSaveTableSecurity:
 
 
 class TestPubChemClientSecurity:
-    """Security tests for PubChemClient validation."""
+    """Security tests for internal PubChem client validation."""
 
     def test_sleep_below_minimum_rejected(self):
         """sleep below 0.1 raises ValueError."""
