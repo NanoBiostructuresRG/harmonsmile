@@ -20,6 +20,26 @@ from .standardize import RDKitStandardizer
 
 logger = logging.getLogger(__name__)
 
+_HARMONIZATION_COLUMNS = [
+    "SMILES_Harmonized",
+    "SMILES_Harmonization_Status",
+    "SMILES_Harmonization_Error",
+]
+
+
+def _append_harmonization_columns(
+    df: pd.DataFrame,
+    smiles_col: str,
+    std: RDKitStandardizer,
+) -> None:
+    """
+    Append lab harmonization result columns for the given source SMILES column.
+    """
+    results = df[smiles_col].apply(std.to_lab_harmonized)
+    df["SMILES_Harmonized"] = results.apply(lambda result: result.value)
+    df["SMILES_Harmonization_Status"] = results.apply(lambda result: result.status)
+    df["SMILES_Harmonization_Error"] = results.apply(lambda result: result.error)
+
 
 def _select_output_columns(
     df: pd.DataFrame,
@@ -113,6 +133,7 @@ class PubChemIngest:
         # SMILES harmonization to COCONUT 2.0 convention
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
+            _append_harmonization_columns(out, "SMILES", self.std)
         else:
             logger.warning(
                 "[PubChemIngest] 'SMILES' column not found after fetching properties "
@@ -124,7 +145,8 @@ class PubChemIngest:
             out.rename(columns={"MolecularWeight": "MW"}, inplace=True)
 
         desired = ["id", "PubChem CID",
-                   "SMILES", "SMILES_RDKit", "ConnectivitySMILES",
+                   "SMILES", "SMILES_RDKit", *_HARMONIZATION_COLUMNS,
+                   "ConnectivitySMILES",
                    "MolecularFormula", "MW", "InChI", "InChIKey",
                    "XLogP", "TPSA", "Charge",
                    "HBondDonorCount", "HBondAcceptorCount",
@@ -252,9 +274,11 @@ class ChEMBLIngest:
         # SMILES harmonization to COCONUT 2.0 convention
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
+            _append_harmonization_columns(out, "SMILES", self.std)
 
         desired = [
             "id", "ChEMBL ID", "name", "SMILES", "SMILES_RDKit",
+            *_HARMONIZATION_COLUMNS,
             "InChI", "InChIKey", "MW", "MolecularFormula",
             "ALogP", "TPSA", "HBA", "HBD",
             "RotatableBonds", "HeavyAtoms", "QED", "Ro5Violations",
@@ -342,7 +366,13 @@ class SMILESPrep:
             )
 
         df["SMILES_RDKit"] = df[self.cfg.smiles_col].apply(self.std.to_iso_kek)
-        desired = ["id", self.cfg.smiles_col, "SMILES_RDKit"]
+        _append_harmonization_columns(df, self.cfg.smiles_col, self.std)
+        desired = [
+            "id",
+            self.cfg.smiles_col,
+            "SMILES_RDKit",
+            *_HARMONIZATION_COLUMNS,
+        ]
         out = _select_output_columns(
             df,
             desired,

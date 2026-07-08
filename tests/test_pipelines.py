@@ -9,7 +9,12 @@ import pandas as pd
 import pytest
 from unittest.mock import MagicMock
 
-from harmonsmile import PubChemConfig, ChEMBLConfig, SMILESConfig
+from harmonsmile import (
+    HarmonizationResult,
+    PubChemConfig,
+    ChEMBLConfig,
+    SMILESConfig,
+)
 from harmonsmile.pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 
 
@@ -28,8 +33,13 @@ def _empty_csv(columns: list[str]) -> str:
 
 
 def _std() -> MagicMock:
-    std = MagicMock(spec=["to_iso_kek"])
+    std = MagicMock(spec=["to_iso_kek", "to_lab_harmonized"])
     std.to_iso_kek = lambda smiles: f"rdkit:{smiles}" if pd.notna(smiles) else None
+    std.to_lab_harmonized = lambda smiles: (
+        HarmonizationResult(f"harmonized:{smiles}", "ok", None, None)
+        if pd.notna(smiles) and smiles == "CCO"
+        else HarmonizationResult(None, "invalid_smiles", "invalid SMILES", None)
+    )
     return std
 
 
@@ -101,8 +111,15 @@ class TestPubChemIngest:
             ).run()
             assert list(out.columns) == [
                 "id", "PubChem CID", "SMILES", "SMILES_RDKit",
+                "SMILES_Harmonized", "SMILES_Harmonization_Status",
+                "SMILES_Harmonization_Error",
                 "ConnectivitySMILES", "MW",
             ]
+            assert out.loc[0, "SMILES_RDKit"] == "rdkit:CCO"
+            assert out.loc[0, "ConnectivitySMILES"] == "CCO"
+            assert out.loc[0, "SMILES_Harmonized"] == "harmonized:CCO"
+            assert out.loc[0, "SMILES_Harmonization_Status"] == "ok"
+            assert pd.isna(out.loc[0, "SMILES_Harmonization_Error"])
         finally:
             os.unlink(path)
 
@@ -149,7 +166,15 @@ class TestChEMBLIngest:
                 client=mock_client,
                 std=_std(),
             ).run()
-            assert list(out.columns) == ["id", "ChEMBL ID", "name", "SMILES", "SMILES_RDKit", "MW"]
+            assert list(out.columns) == [
+                "id", "ChEMBL ID", "name", "SMILES", "SMILES_RDKit",
+                "SMILES_Harmonized", "SMILES_Harmonization_Status",
+                "SMILES_Harmonization_Error", "MW",
+            ]
+            assert out.loc[0, "SMILES_RDKit"] == "rdkit:CCO"
+            assert out.loc[0, "SMILES_Harmonized"] == "harmonized:CCO"
+            assert out.loc[0, "SMILES_Harmonization_Status"] == "ok"
+            assert pd.isna(out.loc[0, "SMILES_Harmonization_Error"])
             assert not os.path.exists(out_path)
         finally:
             os.unlink(path)
@@ -201,9 +226,30 @@ class TestSMILESPrep:
         try:
             out = SMILESPrep(SMILESConfig(input_path=path, smiles_col="SMILES"), std=_std()).run()
             assert isinstance(out, pd.DataFrame)
-            assert list(out.columns) == ["id", "SMILES", "SMILES_RDKit"]
+            assert list(out.columns) == [
+                "id", "SMILES", "SMILES_RDKit", "SMILES_Harmonized",
+                "SMILES_Harmonization_Status", "SMILES_Harmonization_Error",
+            ]
+            assert out.loc[0, "SMILES_RDKit"] == "rdkit:CCO"
+            assert out.loc[0, "SMILES_Harmonized"] == "harmonized:CCO"
+            assert out.loc[0, "SMILES_Harmonization_Status"] == "ok"
+            assert pd.isna(out.loc[0, "SMILES_Harmonization_Error"])
             assert "source_note" not in out.columns
             assert not os.path.exists(out_path)
+        finally:
+            os.unlink(path)
+
+    def test_invalid_smiles_row_is_retained_with_harmonization_status(self):
+        path = _write_csv("id,SMILES\n1,invalid\n")
+        try:
+            out = SMILESPrep(
+                SMILESConfig(input_path=path, smiles_col="SMILES"),
+                std=_std(),
+            ).run()
+            assert len(out) == 1
+            assert pd.isna(out.loc[0, "SMILES_Harmonized"])
+            assert out.loc[0, "SMILES_Harmonization_Status"] != "ok"
+            assert out.loc[0, "SMILES_Harmonization_Error"] == "invalid SMILES"
         finally:
             os.unlink(path)
 
@@ -214,7 +260,11 @@ class TestSMILESPrep:
                 SMILESConfig(input_path=path, smiles_col="SMILES", keep_extra_columns=True),
                 std=_std(),
             ).run()
-            assert list(out.columns) == ["id", "SMILES", "SMILES_RDKit", "source_note"]
+            assert list(out.columns) == [
+                "id", "SMILES", "SMILES_RDKit", "SMILES_Harmonized",
+                "SMILES_Harmonization_Status", "SMILES_Harmonization_Error",
+                "source_note",
+            ]
             assert "Unnamed: 0" not in out.columns
         finally:
             os.unlink(path)
