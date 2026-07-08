@@ -9,6 +9,8 @@ Classes
 -------
 RDKitStandardizer
     Standardize SMILES strings using RDKit.
+HarmonizationResult
+    Typed result returned by lab harmonization.
 PubChemConfig
     Immutable configuration for PubChemIngest.
 ChEMBLConfig
@@ -69,7 +71,7 @@ Fetch and harmonize ChEMBL data:
 >>> save_table(df, "results/chembl_harmonized.csv")
 """
 
-from .standardize import RDKitStandardizer
+from .standardize import HarmonizationResult, RDKitStandardizer
 from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
 from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
 from .io import load_table, save_table
@@ -79,6 +81,7 @@ __author__ = "Flavio F. Contreras-Torres"
 
 __all__ = [
     "RDKitStandardizer",
+    "HarmonizationResult",
     "PubChemIngest",
     "PubChemConfig",
     "ChEMBLIngest",

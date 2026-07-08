@@ -4,7 +4,7 @@ Harmonization pipelines for PubChem and other databases.
 
 Provides :class:`PubChemIngest` for fetching and standardizing PubChem
 compound data, :class:`ChEMBLIngest` for ChEMBL compound data, and
-:class:`SMILESPrep` for harmonizing SMILES from any tabular source.
+:class:`SMILESPrep` for preparing SMILES from any tabular source.
 """
 
 from __future__ import annotations
@@ -19,6 +19,26 @@ from .pubchem import _PubChemClient
 from .standardize import RDKitStandardizer
 
 logger = logging.getLogger(__name__)
+
+_HARMONIZATION_COLUMNS = [
+    "SMILES_Harmonized",
+    "SMILES_Harmonization_Status",
+    "SMILES_Harmonization_Error",
+]
+
+
+def _append_harmonization_columns(
+    df: pd.DataFrame,
+    smiles_col: str,
+    std: RDKitStandardizer,
+) -> None:
+    """
+    Append value/status/error columns from lab harmonization.
+    """
+    results = df[smiles_col].apply(std.to_lab_harmonized)
+    df["SMILES_Harmonized"] = results.apply(lambda result: result.value)
+    df["SMILES_Harmonization_Status"] = results.apply(lambda result: result.status)
+    df["SMILES_Harmonization_Error"] = results.apply(lambda result: result.error)
 
 
 def _select_output_columns(
@@ -41,8 +61,9 @@ class PubChemIngest:
     """
     Pipeline for ingesting and harmonizing PubChem compound data.
 
-    Fetches properties from the PubChem REST API and appends a
-    standardized SMILES_RDKit column using RDKit canonicalization.
+    Fetches properties from the PubChem REST API and appends SMILES_RDKit
+    plus lab harmonization value/status/error columns. PubChem-provided
+    ConnectivitySMILES is preserved when available.
 
     Parameters
     ----------
@@ -110,9 +131,10 @@ class PubChemIngest:
         props_df = pd.DataFrame(list(props))
         out = pd.concat([df, props_df], axis=1)
 
-        # SMILES harmonization to COCONUT 2.0 convention
+        # SMILES_RDKit preserves the v0.2.5 RDKit canonicalization contract.
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
+            _append_harmonization_columns(out, "SMILES", self.std)
         else:
             logger.warning(
                 "[PubChemIngest] 'SMILES' column not found after fetching properties "
@@ -124,7 +146,8 @@ class PubChemIngest:
             out.rename(columns={"MolecularWeight": "MW"}, inplace=True)
 
         desired = ["id", "PubChem CID",
-                   "SMILES", "SMILES_RDKit", "ConnectivitySMILES",
+                   "SMILES", "SMILES_RDKit", *_HARMONIZATION_COLUMNS,
+                   "ConnectivitySMILES",
                    "MolecularFormula", "MW", "InChI", "InChIKey",
                    "XLogP", "TPSA", "Charge",
                    "HBondDonorCount", "HBondAcceptorCount",
@@ -169,9 +192,8 @@ class ChEMBLIngest:
     """
     Pipeline for ingesting and harmonizing ChEMBL compound data.
 
-    Fetches properties from the ChEMBL REST API by ChEMBL ID, applies
-    RDKit canonicalization to produce a standardized SMILES_RDKit column,
-    and returns the result as a DataFrame.
+    Fetches properties from the ChEMBL REST API by ChEMBL ID and appends
+    SMILES_RDKit plus lab harmonization value/status/error columns.
 
     Parameters
     ----------
@@ -249,12 +271,14 @@ class ChEMBLIngest:
 
         out.rename(columns=_CHEMBL_RENAME, inplace=True)
 
-        # SMILES harmonization to COCONUT 2.0 convention
+        # SMILES_RDKit preserves the v0.2.5 RDKit canonicalization contract.
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
+            _append_harmonization_columns(out, "SMILES", self.std)
 
         desired = [
             "id", "ChEMBL ID", "name", "SMILES", "SMILES_RDKit",
+            *_HARMONIZATION_COLUMNS,
             "InChI", "InChIKey", "MW", "MolecularFormula",
             "ALogP", "TPSA", "HBA", "HBD",
             "RotatableBonds", "HeavyAtoms", "QED", "Ro5Violations",
@@ -281,10 +305,10 @@ class ChEMBLIngest:
 
 class SMILESPrep:
     """
-    Pipeline for harmonizing SMILES from any tabular source.
+    Pipeline for preparing SMILES from any tabular source.
 
-    Reads a tabular file, applies RDKit canonicalization to the specified
-    SMILES column, and returns the result with an appended SMILES_RDKit column.
+    Reads a tabular file and appends SMILES_RDKit plus lab harmonization
+    value/status/error columns for the configured source SMILES column.
 
     Parameters
     ----------
@@ -342,7 +366,13 @@ class SMILESPrep:
             )
 
         df["SMILES_RDKit"] = df[self.cfg.smiles_col].apply(self.std.to_iso_kek)
-        desired = ["id", self.cfg.smiles_col, "SMILES_RDKit"]
+        _append_harmonization_columns(df, self.cfg.smiles_col, self.std)
+        desired = [
+            "id",
+            self.cfg.smiles_col,
+            "SMILES_RDKit",
+            *_HARMONIZATION_COLUMNS,
+        ]
         out = _select_output_columns(
             df,
             desired,

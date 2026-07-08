@@ -3,19 +3,52 @@
 SMILES standardization utilities based on RDKit.
 
 Provides :class:`RDKitStandardizer` for converting SMILES strings to
-canonical + isomeric + Kekulized form, following the COCONUT 2.0 convention.
+canonical + isomeric + Kekulized form and for applying the v0.3.0
+RDKit-native lab harmonization policy.
 """
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+
 from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
+
+
+@dataclass(frozen=True)
+class HarmonizationResult:
+    """
+    Result from lab SMILES harmonization.
+
+    Attributes
+    ----------
+    value : str or None
+        Harmonized SMILES when status is ok.
+    status : str
+        Processing status.
+    error : str or None
+        Human-readable error detail for failures.
+    warning : str or None
+        Warning detail for successful outputs with caveats.
+    """
+
+    value: str | None
+    status: str
+    error: str | None
+    warning: str | None
 
 
 class RDKitStandardizer:
     """
-    Standardize SMILES strings using RDKit.
+    Standardize and harmonize SMILES strings using RDKit.
 
-    Converts input SMILES to a consistent canonical form following the
-    COCONUT 2.0 convention: canonical + isomeric + Kekulized.
+    ``to_iso_kek`` preserves the v0.2.5 RDKit canonicalization contract.
+    ``to_lab_harmonized`` applies the v0.3.0 lab harmonization policy.
     """
+
+    _ALLOWED_ELEMENTS = frozenset({
+        "H", "B", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Se", "Br", "I",
+    })
 
     @staticmethod
     def to_iso_kek(smiles: str) -> str | None:
@@ -34,6 +67,10 @@ class RDKitStandardizer:
         
         Notes
         -----
+        This is a compatibility canonicalization layer, not full chemical
+        harmonization. It does not intentionally desalt, neutralize, reionize,
+        or canonicalize tautomers.
+
         Chiral centers (e.g. ``[C@@H]``) are preserved because RDKit encodes
         tetrahedral stereochemistry independently of kekulization.
 
@@ -97,3 +134,175 @@ class RDKitStandardizer:
             return Chem.MolToSmiles(m, canonical=True, isomericSmiles=False, kekuleSmiles=True)
         except Exception:
             return None
+
+    @classmethod
+    def to_lab_harmonized(
+        cls,
+        smiles,
+        *,
+        canonicalize_tautomers: bool = True,
+        max_tautomers: int = 1000,
+        max_transforms: int = 1000,
+    ) -> HarmonizationResult:
+        """
+        Harmonize a SMILES string using explicit RDKit-native lab policy.
+
+        The policy is intentionally auditable and avoids broad parent/cleanup
+        helpers. It validates input, parses with RDKit sanitization, applies
+        normalization, selects the largest fragment, validates allowed elements,
+        uncharges, reionizes, optionally canonicalizes tautomers, and finally
+        serializes as canonical, isomeric, Kekule SMILES.
+
+        Parameters
+        ----------
+        smiles : Any
+            Input SMILES value.
+        canonicalize_tautomers : bool, optional
+            If True, use RDKit TautomerEnumerator canonicalization.
+        max_tautomers : int, optional
+            Applied through TautomerEnumerator.SetMaxTautomers when available.
+        max_transforms : int, optional
+            Applied through TautomerEnumerator.SetMaxTransforms when available.
+
+        Returns
+        -------
+        HarmonizationResult
+            Typed harmonization result with value, status, error, and warning.
+
+        Notes
+        -----
+        This method does not call RemoveStereochemistry. When available, RDKit
+        tautomer stereo-removal defaults are overridden to preserve bond and
+        sp3 stereo, and stereo reassignment is kept enabled. Residual assigned
+        chiral-center changes after tautomer canonicalization are reported as
+        warning="stereo_annotation_changed". This is a conservative caveat, not
+        a complete stereochemistry audit. The method returns one canonical
+        harmonized representation, not a tautomer ensemble, and it is not a
+        pH-specific or bioactive-tautomer predictor.
+        """
+        if not isinstance(smiles, str) or not smiles.strip():
+            return HarmonizationResult(
+                None,
+                "missing_smiles",
+                "missing or blank SMILES",
+                None,
+            )
+
+        mol = Chem.MolFromSmiles(smiles, sanitize=True)
+        if mol is None:
+            return HarmonizationResult(None, "invalid_smiles", "invalid SMILES", None)
+
+        try:
+            mol = rdMolStandardize.Normalize(mol)
+            mol = rdMolStandardize.LargestFragmentChooser().choose(mol)
+
+            disallowed = cls._disallowed_elements(mol)
+            if disallowed:
+                symbols = ", ".join(disallowed)
+                return HarmonizationResult(
+                    None,
+                    "disallowed_elements",
+                    f"disallowed elements: {symbols}",
+                    None,
+                )
+
+            mol = cls._uncharger().uncharge(mol)
+            mol = rdMolStandardize.Reionizer().reionize(mol)
+
+            warning = None
+            if canonicalize_tautomers:
+                before_chiral = cls._assigned_chiral_centers(mol)
+                enumerator = cls._tautomer_enumerator(max_tautomers, max_transforms)
+                result = enumerator.Enumerate(mol)
+
+                if cls._tautomer_limit_exceeded(result):
+                    return HarmonizationResult(
+                        None,
+                        "tautomer_limit_exceeded",
+                        f"tautomer enumeration status: {result.status}",
+                        None,
+                    )
+
+                mol = enumerator.PickCanonical(result)
+                after_chiral = cls._assigned_chiral_centers(mol)
+                if before_chiral != after_chiral:
+                    warning = "stereo_annotation_changed"
+
+            kekule_mol = Chem.Mol(mol)
+            Chem.Kekulize(kekule_mol, clearAromaticFlags=True)
+            value = Chem.MolToSmiles(
+                kekule_mol,
+                canonical=True,
+                isomericSmiles=True,
+                kekuleSmiles=True,
+            )
+        except Exception as exc:
+            return HarmonizationResult(None, "harmonization_failed", str(exc), None)
+
+        return HarmonizationResult(value, "ok", None, warning)
+
+    @classmethod
+    def _disallowed_elements(cls, mol: Chem.Mol) -> list[str]:
+        return sorted({
+            atom.GetSymbol()
+            for atom in mol.GetAtoms()
+            if atom.GetSymbol() not in cls._ALLOWED_ELEMENTS
+        })
+
+    @staticmethod
+    def _uncharger():
+        try:
+            return rdMolStandardize.Uncharger(canonicalOrder=True)
+        except Exception:
+            return rdMolStandardize.Uncharger(True)
+
+    @staticmethod
+    def _tautomer_enumerator(max_tautomers: int, max_transforms: int):
+        enumerator = rdMolStandardize.TautomerEnumerator()
+
+        if hasattr(enumerator, "SetMaxTautomers"):
+            enumerator.SetMaxTautomers(max_tautomers)
+        if hasattr(enumerator, "SetMaxTransforms"):
+            enumerator.SetMaxTransforms(max_transforms)
+
+        if (
+            hasattr(enumerator, "GetRemoveBondStereo")
+            and hasattr(enumerator, "SetRemoveBondStereo")
+            and enumerator.GetRemoveBondStereo()
+        ):
+            enumerator.SetRemoveBondStereo(False)
+        if (
+            hasattr(enumerator, "GetRemoveSp3Stereo")
+            and hasattr(enumerator, "SetRemoveSp3Stereo")
+            and enumerator.GetRemoveSp3Stereo()
+        ):
+            enumerator.SetRemoveSp3Stereo(False)
+        if hasattr(enumerator, "SetReassignStereo"):
+            enumerator.SetReassignStereo(True)
+
+        return enumerator
+
+    @staticmethod
+    def _tautomer_limit_exceeded(result) -> bool:
+        status = getattr(result, "status", None)
+        if status is None:
+            return False
+        names = getattr(rdMolStandardize.TautomerEnumeratorStatus, "names", {})
+        limit_statuses = {
+            names.get("MaxTautomersReached"),
+            names.get("MaxTransformsReached"),
+        }
+        limit_statuses.discard(None)
+        return bool(limit_statuses) and status in limit_statuses
+
+    @staticmethod
+    def _assigned_chiral_centers(mol: Chem.Mol) -> tuple[tuple[int, str], ...]:
+        try:
+            centers = Chem.FindMolChiralCenters(
+                mol,
+                includeUnassigned=False,
+                useLegacyImplementation=False,
+            )
+        except TypeError:
+            centers = Chem.FindMolChiralCenters(mol, includeUnassigned=False)
+        return tuple(centers)
