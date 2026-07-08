@@ -3,7 +3,8 @@
 SMILES standardization utilities based on RDKit.
 
 Provides :class:`RDKitStandardizer` for converting SMILES strings to
-canonical + isomeric + Kekulized form, following the COCONUT 2.0 convention.
+canonical + isomeric + Kekulized form and for applying the v0.3.0
+RDKit-native lab harmonization policy.
 """
 
 from __future__ import annotations
@@ -39,10 +40,10 @@ class HarmonizationResult:
 
 class RDKitStandardizer:
     """
-    Standardize SMILES strings using RDKit.
+    Standardize and harmonize SMILES strings using RDKit.
 
-    Converts input SMILES to a consistent canonical form following the
-    COCONUT 2.0 convention: canonical + isomeric + Kekulized.
+    ``to_iso_kek`` preserves the v0.2.5 RDKit canonicalization contract.
+    ``to_lab_harmonized`` applies the v0.3.0 lab harmonization policy.
     """
 
     _ALLOWED_ELEMENTS = frozenset({
@@ -66,6 +67,10 @@ class RDKitStandardizer:
         
         Notes
         -----
+        This is a compatibility canonicalization layer, not full chemical
+        harmonization. It does not intentionally desalt, neutralize, reionize,
+        or canonicalize tautomers.
+
         Chiral centers (e.g. ``[C@@H]``) are preserved because RDKit encodes
         tetrahedral stereochemistry independently of kekulization.
 
@@ -171,7 +176,9 @@ class RDKitStandardizer:
         sp3 stereo, and stereo reassignment is kept enabled. Residual assigned
         chiral-center changes after tautomer canonicalization are reported as
         warning="stereo_annotation_changed". This is a conservative caveat, not
-        a complete stereochemistry audit.
+        a complete stereochemistry audit. The method returns one canonical
+        harmonized representation, not a tautomer ensemble, and it is not a
+        pH-specific or bioactive-tautomer predictor.
         """
         if not isinstance(smiles, str) or not smiles.strip():
             return HarmonizationResult(

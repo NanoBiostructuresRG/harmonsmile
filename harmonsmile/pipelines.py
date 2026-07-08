@@ -4,7 +4,7 @@ Harmonization pipelines for PubChem and other databases.
 
 Provides :class:`PubChemIngest` for fetching and standardizing PubChem
 compound data, :class:`ChEMBLIngest` for ChEMBL compound data, and
-:class:`SMILESPrep` for harmonizing SMILES from any tabular source.
+:class:`SMILESPrep` for preparing SMILES from any tabular source.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ def _append_harmonization_columns(
     std: RDKitStandardizer,
 ) -> None:
     """
-    Append lab harmonization result columns for the given source SMILES column.
+    Append value/status/error columns from lab harmonization.
     """
     results = df[smiles_col].apply(std.to_lab_harmonized)
     df["SMILES_Harmonized"] = results.apply(lambda result: result.value)
@@ -61,8 +61,9 @@ class PubChemIngest:
     """
     Pipeline for ingesting and harmonizing PubChem compound data.
 
-    Fetches properties from the PubChem REST API and appends a
-    standardized SMILES_RDKit column using RDKit canonicalization.
+    Fetches properties from the PubChem REST API and appends SMILES_RDKit
+    plus lab harmonization value/status/error columns. PubChem-provided
+    ConnectivitySMILES is preserved when available.
 
     Parameters
     ----------
@@ -130,7 +131,7 @@ class PubChemIngest:
         props_df = pd.DataFrame(list(props))
         out = pd.concat([df, props_df], axis=1)
 
-        # SMILES harmonization to COCONUT 2.0 convention
+        # SMILES_RDKit preserves the v0.2.5 RDKit canonicalization contract.
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
             _append_harmonization_columns(out, "SMILES", self.std)
@@ -191,9 +192,8 @@ class ChEMBLIngest:
     """
     Pipeline for ingesting and harmonizing ChEMBL compound data.
 
-    Fetches properties from the ChEMBL REST API by ChEMBL ID, applies
-    RDKit canonicalization to produce a standardized SMILES_RDKit column,
-    and returns the result as a DataFrame.
+    Fetches properties from the ChEMBL REST API by ChEMBL ID and appends
+    SMILES_RDKit plus lab harmonization value/status/error columns.
 
     Parameters
     ----------
@@ -271,7 +271,7 @@ class ChEMBLIngest:
 
         out.rename(columns=_CHEMBL_RENAME, inplace=True)
 
-        # SMILES harmonization to COCONUT 2.0 convention
+        # SMILES_RDKit preserves the v0.2.5 RDKit canonicalization contract.
         if "SMILES" in out.columns:
             out["SMILES_RDKit"] = out["SMILES"].apply(self.std.to_iso_kek)
             _append_harmonization_columns(out, "SMILES", self.std)
@@ -305,10 +305,10 @@ class ChEMBLIngest:
 
 class SMILESPrep:
     """
-    Pipeline for harmonizing SMILES from any tabular source.
+    Pipeline for preparing SMILES from any tabular source.
 
-    Reads a tabular file, applies RDKit canonicalization to the specified
-    SMILES column, and returns the result with an appended SMILES_RDKit column.
+    Reads a tabular file and appends SMILES_RDKit plus lab harmonization
+    value/status/error columns for the configured source SMILES column.
 
     Parameters
     ----------
