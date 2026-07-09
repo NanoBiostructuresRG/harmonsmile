@@ -162,7 +162,9 @@ harmonsmile --chembl-id CHEMBL294199
   </tbody>
 </table>
 
-All pipelines append a `SMILES_RDKit` column with the harmonized SMILES.
+All pipelines preserve source `SMILES`, append compatibility `SMILES_RDKit`,
+and append `SMILES_Harmonized`, `SMILES_Harmonization_Status`, and
+`SMILES_Harmonization_Message`.
 Pipeline `.run()` methods return a `pandas.DataFrame` and do not write files.
 Use `save_table(df, path)` from Python, or CLI `--*-out` options, to persist
 results.

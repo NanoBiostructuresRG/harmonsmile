@@ -39,7 +39,7 @@ The platform enables:
 
 ## SMILES Column Contract
 
-HARMONSMILE v0.3.0 exposes three universal SMILES representations in pipeline
+HARMONSMILE exposes three universal SMILES representations in pipeline
 outputs:
 
 - `SMILES`: source/input SMILES. This is the value used as input for RDKit
@@ -49,11 +49,12 @@ outputs:
   for compatibility with v0.2.5. It is not a full chemical harmonization layer
   and does not intentionally desalt, neutralize, reionize, or canonicalize
   tautomers.
-- `SMILES_Harmonized`: v0.3.0 lab-harmonized representation, produced by
+- `SMILES_Harmonized`: lab-harmonized representation, produced by
   `RDKitStandardizer.to_lab_harmonized(SMILES)`. It uses an RDKit-native
-  `MolStandardize` policy: normalization, largest-fragment selection,
-  allowed-elements validation, uncharging, reionization, optional tautomer
-  canonicalization, and final canonical/isomeric/Kekule serialization.
+  `MolStandardize` policy with validation before automatic modification,
+  controlled parent generation for simple salts/counterions, normalization,
+  uncharging, reionization, optional tautomer canonicalization, and final
+  canonical/isomeric/aromatic serialization.
 
 `SMILES_Harmonized` is intended for database harmonization, deduplication, and
 cross-source matching. It is not guaranteed to represent the most stable, most
@@ -63,12 +64,10 @@ input row. Source traceability is preserved through `SMILES` and `SMILES_RDKit`.
 
 Rows are not dropped when harmonization fails. Instead, the result is carried in:
 
-- `SMILES_Harmonization_Status`: status returned by the harmonization engine.
-  Expected values include `ok`, `missing_smiles`, `invalid_smiles`,
-  `disallowed_elements`, `tautomer_limit_exceeded` when available in the
-  installed RDKit, and `harmonization_failed`.
-- `SMILES_Harmonization_Error`: short auditable error message when
-  harmonization fails; empty/None for successful rows.
+- `SMILES_Harmonization_Status`: short filterable status returned by the
+  harmonization engine: `ok`, `ok_with_warnings`, `unsupported`, or `failed`.
+- `SMILES_Harmonization_Message`: short auditable message for warnings,
+  unsupported structures, or failures; empty/None for successful `ok` rows.
 
 Some sources may also provide source-specific SMILES columns. For example,
 `ConnectivitySMILES` is a PubChem-provided connectivity SMILES column preserved
@@ -213,7 +212,7 @@ python -m harmonsmile --pubchem-in examples/database1.csv --pubchem-out results/
 
 All pipelines preserve the source `SMILES`, append `SMILES_RDKit`, and append
 the lab harmonization columns `SMILES_Harmonized`,
-`SMILES_Harmonization_Status`, and `SMILES_Harmonization_Error`.
+`SMILES_Harmonization_Status`, and `SMILES_Harmonization_Message`.
 Pipeline `.run()` methods return a `pandas.DataFrame` and do not write files.
 Use `save_table(df, path)` to persist results from Python, or use the CLI
 `--*-out` options.
