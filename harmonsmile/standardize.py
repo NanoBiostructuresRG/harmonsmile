@@ -3,7 +3,7 @@
 SMILES standardization utilities based on RDKit.
 
 Provides :class:`RDKitStandardizer` for converting SMILES strings to
-canonical + isomeric + Kekulized form and for applying the v0.3.0
+canonical + isomeric + Kekulized form and for applying the v0.3.x
 RDKit-native lab harmonization policy.
 """
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rdkit import Chem
+from rdkit import Chem, rdBase
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 
@@ -27,7 +27,7 @@ class HarmonizationResult:
     status : str
         Processing status.
     error : str or None
-        Human-readable error detail for failures.
+        Human-readable message detail for failures or unsupported structures.
     warning : str or None
         Warning detail for successful outputs with caveats.
     """
@@ -43,11 +43,14 @@ class RDKitStandardizer:
     Standardize and harmonize SMILES strings using RDKit.
 
     ``to_iso_kek`` preserves the v0.2.5 RDKit canonicalization contract.
-    ``to_lab_harmonized`` applies the v0.3.0 lab harmonization policy.
+    ``to_lab_harmonized`` applies the v0.3.x lab harmonization policy.
     """
 
     _ALLOWED_ELEMENTS = frozenset({
         "H", "B", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Se", "Br", "I",
+    })
+    _COUNTERION_ELEMENTS = _ALLOWED_ELEMENTS | frozenset({
+        "Li", "Na", "K", "Rb", "Cs", "Mg", "Ca", "Sr", "Ba",
     })
 
     @staticmethod
@@ -92,13 +95,14 @@ class RDKitStandardizer:
         """
         if not isinstance(smiles, str) or not smiles.strip():
             return None
-        m = Chem.MolFromSmiles(smiles, sanitize=True)
-        if m is None:
-            return None
-        try:
-            return Chem.MolToSmiles(m, canonical=True, isomericSmiles=True, kekuleSmiles=True)
-        except Exception:
-            return None
+        with rdBase.BlockLogs():
+            m = Chem.MolFromSmiles(smiles, sanitize=True)
+            if m is None:
+                return None
+            try:
+                return Chem.MolToSmiles(m, canonical=True, isomericSmiles=True, kekuleSmiles=True)
+            except Exception:
+                return None
 
     @staticmethod
     def to_conn_kek(smiles: str) -> str | None:
@@ -127,13 +131,14 @@ class RDKitStandardizer:
         """
         if not isinstance(smiles, str) or not smiles.strip():
             return None
-        m = Chem.MolFromSmiles(smiles, sanitize=True)
-        if m is None:
-            return None
-        try:
-            return Chem.MolToSmiles(m, canonical=True, isomericSmiles=False, kekuleSmiles=True)
-        except Exception:
-            return None
+        with rdBase.BlockLogs():
+            m = Chem.MolFromSmiles(smiles, sanitize=True)
+            if m is None:
+                return None
+            try:
+                return Chem.MolToSmiles(m, canonical=True, isomericSmiles=False, kekuleSmiles=True)
+            except Exception:
+                return None
 
     @classmethod
     def to_lab_harmonized(
@@ -148,10 +153,11 @@ class RDKitStandardizer:
         Harmonize a SMILES string using explicit RDKit-native lab policy.
 
         The policy is intentionally auditable and avoids broad parent/cleanup
-        helpers. It validates input, parses with RDKit sanitization, applies
-        normalization, selects the largest fragment, validates allowed elements,
-        uncharges, reionizes, optionally canonicalizes tautomers, and finally
-        serializes as canonical, isomeric, Kekule SMILES.
+        helpers. It validates input, generates a controlled parent for simple
+        salts/counterions, rejects ambiguous or unsupported structures, applies
+        normalization, uncharging, reionization, optional tautomer
+        canonicalization, and finally serializes as canonical, isomeric,
+        aromatic SMILES.
 
         Parameters
         ----------
@@ -181,65 +187,98 @@ class RDKitStandardizer:
         pH-specific or bioactive-tautomer predictor.
         """
         if not isinstance(smiles, str) or not smiles.strip():
-            return HarmonizationResult(
-                None,
-                "missing_smiles",
-                "missing or blank SMILES",
-                None,
-            )
+            return HarmonizationResult(None, "failed", "missing or blank SMILES", None)
 
-        mol = Chem.MolFromSmiles(smiles, sanitize=True)
-        if mol is None:
-            return HarmonizationResult(None, "invalid_smiles", "invalid SMILES", None)
+        with rdBase.BlockLogs():
+            mol = Chem.MolFromSmiles(smiles, sanitize=True)
+            if mol is None:
+                return HarmonizationResult(None, "failed", "invalid SMILES", None)
 
-        try:
-            mol = rdMolStandardize.Normalize(mol)
-            mol = rdMolStandardize.LargestFragmentChooser().choose(mol)
+            try:
+                warning = None
+                fragments = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
+                if len(fragments) > 1:
+                    parent_result = cls._salt_parent(mol, fragments)
+                    if parent_result is None:
+                        return HarmonizationResult(
+                            None,
+                            "unsupported",
+                            "ambiguous multi-component structure; parent not selected",
+                            None,
+                        )
+                    mol = parent_result
+                    warning = "salt/counterion removed during controlled parent standardization"
 
-            disallowed = cls._disallowed_elements(mol)
-            if disallowed:
-                symbols = ", ".join(disallowed)
-                return HarmonizationResult(
-                    None,
-                    "disallowed_elements",
-                    f"disallowed elements: {symbols}",
-                    None,
-                )
-
-            mol = cls._uncharger().uncharge(mol)
-            mol = rdMolStandardize.Reionizer().reionize(mol)
-
-            warning = None
-            if canonicalize_tautomers:
-                before_chiral = cls._assigned_chiral_centers(mol)
-                enumerator = cls._tautomer_enumerator(max_tautomers, max_transforms)
-                result = enumerator.Enumerate(mol)
-
-                if cls._tautomer_limit_exceeded(result):
+                disallowed = cls._disallowed_elements(mol)
+                if disallowed:
+                    symbols = ", ".join(disallowed)
                     return HarmonizationResult(
                         None,
-                        "tautomer_limit_exceeded",
-                        f"tautomer enumeration status: {result.status}",
+                        "unsupported",
+                        f"unsupported elements: {symbols}",
                         None,
                     )
 
-                mol = enumerator.PickCanonical(result)
-                after_chiral = cls._assigned_chiral_centers(mol)
-                if before_chiral != after_chiral:
-                    warning = "stereo_annotation_changed"
+                before_connectivity = cls._connectivity_signature(mol)
+                before_smiles = Chem.MolToSmiles(
+                    mol,
+                    canonical=True,
+                    isomericSmiles=True,
+                    kekuleSmiles=False,
+                )
+                mol = rdMolStandardize.Normalize(mol)
+                mol = cls._uncharger().uncharge(mol)
+                mol = rdMolStandardize.Reionizer().reionize(mol)
+                after_smiles = Chem.MolToSmiles(
+                    mol,
+                    canonical=True,
+                    isomericSmiles=True,
+                    kekuleSmiles=False,
+                )
 
-            kekule_mol = Chem.Mol(mol)
-            Chem.Kekulize(kekule_mol, clearAromaticFlags=True)
-            value = Chem.MolToSmiles(
-                kekule_mol,
-                canonical=True,
-                isomericSmiles=True,
-                kekuleSmiles=True,
-            )
-        except Exception as exc:
-            return HarmonizationResult(None, "harmonization_failed", str(exc), None)
+                after_standardization = cls._connectivity_signature(mol)
+                if before_connectivity != after_standardization:
+                    return HarmonizationResult(
+                        None,
+                        "unsupported",
+                        "harmonization changed molecular connectivity",
+                        None,
+                    )
 
-        return HarmonizationResult(value, "ok", None, warning)
+                if before_smiles != after_smiles:
+                    warning = cls._join_messages(
+                        warning,
+                        "normalization/charge standardization applied",
+                    )
+                if canonicalize_tautomers:
+                    before_chiral = cls._assigned_chiral_centers(mol)
+                    enumerator = cls._tautomer_enumerator(max_tautomers, max_transforms)
+                    result = enumerator.Enumerate(mol)
+
+                    if cls._tautomer_limit_exceeded(result):
+                        return HarmonizationResult(
+                            None,
+                            "failed",
+                            f"tautomer enumeration status: {result.status}",
+                            None,
+                        )
+
+                    mol = enumerator.PickCanonical(result)
+                    after_chiral = cls._assigned_chiral_centers(mol)
+                    if before_chiral != after_chiral:
+                        warning = cls._join_messages(warning, "stereo_annotation_changed")
+
+                value = Chem.MolToSmiles(
+                    mol,
+                    canonical=True,
+                    isomericSmiles=True,
+                    kekuleSmiles=False,
+                )
+            except Exception as exc:
+                return HarmonizationResult(None, "failed", str(exc), None)
+
+        status = "ok_with_warnings" if warning else "ok"
+        return HarmonizationResult(value, status, None, warning)
 
     @classmethod
     def _disallowed_elements(cls, mol: Chem.Mol) -> list[str]:
@@ -248,6 +287,58 @@ class RDKitStandardizer:
             for atom in mol.GetAtoms()
             if atom.GetSymbol() not in cls._ALLOWED_ELEMENTS
         })
+
+    @classmethod
+    def _salt_parent(
+        cls,
+        mol: Chem.Mol,
+        fragments: tuple[Chem.Mol, ...],
+    ) -> Chem.Mol | None:
+        organic = [frag for frag in fragments if cls._has_carbon(frag)]
+        counterions = [frag for frag in fragments if not cls._has_carbon(frag)]
+        if len(organic) != 1:
+            return None
+        if cls._disallowed_elements(organic[0]):
+            return None
+        if any(not cls._is_simple_counterion(frag) for frag in counterions):
+            return None
+
+        parent = rdMolStandardize.FragmentParent(mol)
+        if len(Chem.GetMolFrags(parent)) != 1:
+            return None
+        if not cls._has_carbon(parent) or cls._disallowed_elements(parent):
+            return None
+        return parent
+
+    @staticmethod
+    def _has_carbon(mol: Chem.Mol) -> bool:
+        return any(atom.GetSymbol() == "C" for atom in mol.GetAtoms())
+
+    @classmethod
+    def _is_simple_counterion(cls, mol: Chem.Mol) -> bool:
+        symbols = {atom.GetSymbol() for atom in mol.GetAtoms()}
+        if not symbols <= cls._COUNTERION_ELEMENTS:
+            return False
+        charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+        return mol.GetNumAtoms() == 1 or charge != 0
+
+    @staticmethod
+    def _join_messages(*messages: str | None) -> str | None:
+        parts = [message for message in messages if message]
+        return "; ".join(parts) if parts else None
+
+    @staticmethod
+    def _connectivity_signature(mol: Chem.Mol) -> str:
+        atoms = tuple((atom.GetIdx(), atom.GetAtomicNum()) for atom in mol.GetAtoms())
+        bonds = sorted(
+            (
+                min(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()),
+                max(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()),
+                str(bond.GetBondType()),
+            )
+            for bond in mol.GetBonds()
+        )
+        return repr((atoms, bonds))
 
     @staticmethod
     def _uncharger():

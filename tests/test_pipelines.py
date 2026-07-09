@@ -38,7 +38,7 @@ def _std() -> MagicMock:
     std.to_lab_harmonized = lambda smiles: (
         HarmonizationResult(f"harmonized:{smiles}", "ok", None, None)
         if pd.notna(smiles) and smiles == "CCO"
-        else HarmonizationResult(None, "invalid_smiles", "invalid SMILES", None)
+        else HarmonizationResult(None, "failed", "invalid SMILES", None)
     )
     return std
 
@@ -101,7 +101,17 @@ class TestPubChemIngest:
         mock_client = _StaticClient({
             "SMILES": "CCO",
             "ConnectivitySMILES": "CCO",
+            "MolecularFormula": "C2H6O",
             "MolecularWeight": "46.07",
+            "InChI": "InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3",
+            "InChIKey": "LFQSCWFLJHTTHZ-UHFFFAOYSA-N",
+            "XLogP": "-0.1",
+            "TPSA": "20.2",
+            "Charge": "0",
+            "HBondDonorCount": "1",
+            "HBondAcceptorCount": "1",
+            "RotatableBondCount": "0",
+            "HeavyAtomCount": "3",
         })
         try:
             out = PubChemIngest(
@@ -110,16 +120,25 @@ class TestPubChemIngest:
                 std=_std(),
             ).run()
             assert list(out.columns) == [
-                "id", "PubChem CID", "SMILES", "SMILES_RDKit",
+                "id", "PubChem CID", "InChI", "InChIKey",
+                "SMILES", "ConnectivitySMILES",
+                "SMILES_RDKit",
                 "SMILES_Harmonized", "SMILES_Harmonization_Status",
-                "SMILES_Harmonization_Error",
-                "ConnectivitySMILES", "MW",
+                "SMILES_Harmonization_Message",
+                "MolecularFormula", "MW", "XLogP", "TPSA", "Charge",
+                "HBondDonorCount", "HBondAcceptorCount",
+                "RotatableBondCount", "HeavyAtomCount",
             ]
+            assert "SMILES_Harmonization_Error" not in out.columns
             assert out.loc[0, "SMILES_RDKit"] == "rdkit:CCO"
             assert out.loc[0, "ConnectivitySMILES"] == "CCO"
             assert out.loc[0, "SMILES_Harmonized"] == "harmonized:CCO"
             assert out.loc[0, "SMILES_Harmonization_Status"] == "ok"
-            assert pd.isna(out.loc[0, "SMILES_Harmonization_Error"])
+            assert pd.isna(out.loc[0, "SMILES_Harmonization_Message"])
+            assert out.loc[0, "MolecularFormula"] == "C2H6O"
+            assert out.loc[0, "InChIKey"] == "LFQSCWFLJHTTHZ-UHFFFAOYSA-N"
+            assert out.loc[0, "HeavyAtomCount"] == "3"
+            assert out.loc[0, "MW"] == pytest.approx(46.07)
         finally:
             os.unlink(path)
 
@@ -133,6 +152,7 @@ class TestPubChemIngest:
                 std=_std(),
             ).run()
             assert "source_note" in out.columns
+            assert out.columns[-1] == "source_note"
             assert "Unnamed: 0" not in out.columns
         finally:
             os.unlink(path)
@@ -169,12 +189,13 @@ class TestChEMBLIngest:
             assert list(out.columns) == [
                 "id", "ChEMBL ID", "name", "SMILES", "SMILES_RDKit",
                 "SMILES_Harmonized", "SMILES_Harmonization_Status",
-                "SMILES_Harmonization_Error", "MW",
+                "SMILES_Harmonization_Message", "MW",
             ]
+            assert "SMILES_Harmonization_Error" not in out.columns
             assert out.loc[0, "SMILES_RDKit"] == "rdkit:CCO"
             assert out.loc[0, "SMILES_Harmonized"] == "harmonized:CCO"
             assert out.loc[0, "SMILES_Harmonization_Status"] == "ok"
-            assert pd.isna(out.loc[0, "SMILES_Harmonization_Error"])
+            assert pd.isna(out.loc[0, "SMILES_Harmonization_Message"])
             assert not os.path.exists(out_path)
         finally:
             os.unlink(path)
@@ -228,14 +249,24 @@ class TestSMILESPrep:
             assert isinstance(out, pd.DataFrame)
             assert list(out.columns) == [
                 "id", "SMILES", "SMILES_RDKit", "SMILES_Harmonized",
-                "SMILES_Harmonization_Status", "SMILES_Harmonization_Error",
+                "SMILES_Harmonization_Status", "SMILES_Harmonization_Message",
             ]
+            assert "SMILES_Harmonization_Error" not in out.columns
             assert out.loc[0, "SMILES_RDKit"] == "rdkit:CCO"
             assert out.loc[0, "SMILES_Harmonized"] == "harmonized:CCO"
             assert out.loc[0, "SMILES_Harmonization_Status"] == "ok"
-            assert pd.isna(out.loc[0, "SMILES_Harmonization_Error"])
+            assert pd.isna(out.loc[0, "SMILES_Harmonization_Message"])
             assert "source_note" not in out.columns
             assert not os.path.exists(out_path)
+        finally:
+            os.unlink(path)
+
+    def test_rdkit_kekule_and_harmonized_aromatic_outputs(self):
+        path = _write_csv("id,SMILES\n1,c1ccccc1\n")
+        try:
+            out = SMILESPrep(SMILESConfig(input_path=path, smiles_col="SMILES")).run()
+            assert out.loc[0, "SMILES_RDKit"] == "C1=CC=CC=C1"
+            assert out.loc[0, "SMILES_Harmonized"] == "c1ccccc1"
         finally:
             os.unlink(path)
 
@@ -249,7 +280,31 @@ class TestSMILESPrep:
             assert len(out) == 1
             assert pd.isna(out.loc[0, "SMILES_Harmonized"])
             assert out.loc[0, "SMILES_Harmonization_Status"] != "ok"
-            assert out.loc[0, "SMILES_Harmonization_Error"] == "invalid SMILES"
+            assert out.loc[0, "SMILES_Harmonization_Message"] == "invalid SMILES"
+        finally:
+            os.unlink(path)
+
+    def test_simple_salt_row_gets_harmonized_parent_with_warning(self):
+        path = _write_csv("id,SMILES\n1,[Na+].CCO\n")
+        try:
+            out = SMILESPrep(SMILESConfig(input_path=path, smiles_col="SMILES")).run()
+            assert len(out) == 1
+            assert out.loc[0, "SMILES_Harmonized"] == "CCO"
+            assert out.loc[0, "SMILES_Harmonization_Status"] == "ok_with_warnings"
+            assert out.loc[0, "SMILES_Harmonization_Message"] == (
+                "salt/counterion removed during controlled parent standardization"
+            )
+        finally:
+            os.unlink(path)
+
+    def test_ambiguous_multicomponent_row_is_not_silently_ok(self):
+        path = _write_csv("id,SMILES\n1,CCO.CCN\n")
+        try:
+            out = SMILESPrep(SMILESConfig(input_path=path, smiles_col="SMILES")).run()
+            assert len(out) == 1
+            assert pd.isna(out.loc[0, "SMILES_Harmonized"])
+            assert out.loc[0, "SMILES_Harmonization_Status"] == "unsupported"
+            assert "ambiguous" in out.loc[0, "SMILES_Harmonization_Message"]
         finally:
             os.unlink(path)
 
@@ -262,7 +317,7 @@ class TestSMILESPrep:
             ).run()
             assert list(out.columns) == [
                 "id", "SMILES", "SMILES_RDKit", "SMILES_Harmonized",
-                "SMILES_Harmonization_Status", "SMILES_Harmonization_Error",
+                "SMILES_Harmonization_Status", "SMILES_Harmonization_Message",
                 "source_note",
             ]
             assert "Unnamed: 0" not in out.columns

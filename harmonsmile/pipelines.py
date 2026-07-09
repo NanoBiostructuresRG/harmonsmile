@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 _HARMONIZATION_COLUMNS = [
     "SMILES_Harmonized",
     "SMILES_Harmonization_Status",
-    "SMILES_Harmonization_Error",
+    "SMILES_Harmonization_Message",
 ]
 
 
@@ -38,7 +38,9 @@ def _append_harmonization_columns(
     results = df[smiles_col].apply(std.to_lab_harmonized)
     df["SMILES_Harmonized"] = results.apply(lambda result: result.value)
     df["SMILES_Harmonization_Status"] = results.apply(lambda result: result.status)
-    df["SMILES_Harmonization_Error"] = results.apply(lambda result: result.error)
+    df["SMILES_Harmonization_Message"] = results.apply(
+        lambda result: result.warning or result.error
+    )
 
 
 def _select_output_columns(
@@ -145,14 +147,25 @@ class PubChemIngest:
         if "MolecularWeight" in out.columns:
             out.rename(columns={"MolecularWeight": "MW"}, inplace=True)
 
-        desired = ["id", "PubChem CID",
-                   "SMILES", "SMILES_RDKit", *_HARMONIZATION_COLUMNS,
-                   "ConnectivitySMILES",
-                   "MolecularFormula", "MW", "InChI", "InChIKey",
-                   "XLogP", "TPSA", "Charge",
-                   "HBondDonorCount", "HBondAcceptorCount",
-                   "RotatableBondCount", "HeavyAtomCount",
-                   ]
+        desired = [
+            "id",
+            "PubChem CID",
+            "InChI",
+            "InChIKey",
+            "SMILES",
+            "ConnectivitySMILES",
+            "SMILES_RDKit",
+            *_HARMONIZATION_COLUMNS,
+            "MolecularFormula",
+            "MW",
+            "XLogP",
+            "TPSA",
+            "Charge",
+            "HBondDonorCount",
+            "HBondAcceptorCount",
+            "RotatableBondCount",
+            "HeavyAtomCount",
+        ]
 
         if "MW" in out.columns:
             out["MW"] = pd.to_numeric(out["MW"], errors="coerce")

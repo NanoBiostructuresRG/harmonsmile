@@ -87,28 +87,33 @@ class TestToLabHarmonized:
         result = RDKitStandardizer.to_lab_harmonized(None)
         assert result == HarmonizationResult(
             None,
-            "missing_smiles",
+            "failed",
             "missing or blank SMILES",
             None,
         )
 
     def test_blank_input(self):
         result = RDKitStandardizer.to_lab_harmonized("   ")
-        assert result.status == "missing_smiles"
+        assert result.status == "failed"
         assert result.error == "missing or blank SMILES"
         assert result.value is None
 
     def test_non_string_input(self):
         result = RDKitStandardizer.to_lab_harmonized(123)
-        assert result.status == "missing_smiles"
+        assert result.status == "failed"
         assert result.error == "missing or blank SMILES"
         assert result.value is None
 
     def test_invalid_smiles(self):
         result = RDKitStandardizer.to_lab_harmonized("invalid_smiles")
-        assert result.status == "invalid_smiles"
+        assert result.status == "failed"
         assert result.error == "invalid SMILES"
         assert result.value is None
+
+    def test_invalid_smiles_does_not_emit_raw_rdkit_logs(self, capfd):
+        RDKitStandardizer.to_lab_harmonized("invalid_smiles")
+        captured = capfd.readouterr()
+        assert "SMILES Parse Error" not in captured.err
 
     def test_simple_valid_molecule(self):
         result = RDKitStandardizer.to_lab_harmonized("CCO")
@@ -116,14 +121,24 @@ class TestToLabHarmonized:
         assert result.value == "CCO"
         assert result.warning is None
 
-    def test_largest_fragment_ignores_removed_counterion_for_elements(self):
+    def test_simple_counterion_generates_parent_with_warning(self):
         result = RDKitStandardizer.to_lab_harmonized("[Na+].CCO")
-        assert result.status == "ok"
+        assert result.status == "ok_with_warnings"
         assert result.value == "CCO"
+        assert result.warning == (
+            "salt/counterion removed during controlled parent standardization"
+        )
 
-    def test_disallowed_element_in_largest_fragment(self):
+    def test_ambiguous_organic_multicomponent_is_unsupported(self):
+        result = RDKitStandardizer.to_lab_harmonized("CCO.CCN")
+        assert result.status == "unsupported"
+        assert result.value is None
+        assert result.error is not None
+        assert "ambiguous" in result.error
+
+    def test_disallowed_element_is_unsupported(self):
         result = RDKitStandardizer.to_lab_harmonized("[Zn]CCCC")
-        assert result.status == "disallowed_elements"
+        assert result.status == "unsupported"
         assert result.value is None
         assert result.error is not None
         assert "Zn" in result.error
@@ -136,8 +151,9 @@ class TestToLabHarmonized:
 
     def test_charged_molecule_exercises_uncharge_reionize(self):
         result = RDKitStandardizer.to_lab_harmonized("C[NH+](C)C")
-        assert result.status == "ok"
+        assert result.status == "ok_with_warnings"
         assert result.value == "CN(C)C"
+        assert result.warning == "normalization/charge standardization applied"
 
     def test_canonicalize_tautomers_true_and_false_are_accepted(self):
         yes = RDKitStandardizer.to_lab_harmonized("CC(=O)C", canonicalize_tautomers=True)
@@ -147,12 +163,11 @@ class TestToLabHarmonized:
         assert yes.value is not None
         assert no.value is not None
 
-    def test_aromatic_output_is_kekule(self):
+    def test_aromatic_output_is_aromatic(self):
         result = RDKitStandardizer.to_lab_harmonized("c1ccccc1")
         assert result.status == "ok"
         assert result.value is not None
-        assert "=" in result.value
-        assert "c" not in result.value
+        assert result.value == "c1ccccc1"
 
     def test_tautomer_enumerator_stereo_flags_preserve_annotations(self):
         enumerator = RDKitStandardizer._tautomer_enumerator(1000, 1000)
@@ -166,7 +181,7 @@ class TestToLabHarmonized:
             max_tautomers=1,
             max_transforms=1,
         )
-        assert result.status == "tautomer_limit_exceeded"
+        assert result.status == "failed"
         assert result.value is None
 
     def test_tautomer_limit_exceeded_false_without_status(self):
