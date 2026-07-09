@@ -1,7 +1,7 @@
 # HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.2.5-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![Version](https://img.shields.io/badge/version-v0.3.0-blue.svg)](https://pypi.org/project/harmonsmile/)
 [![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-teal.svg)](https://nanobiostructuresrg.github.io/harmonsmile/)
@@ -79,17 +79,45 @@ sources.
 
 ## Installation
 
+### For package users:
+
+Create and activate a Python environment:
+
 ```bash
 conda create -n harmonsmile_env python=3.11
 conda activate harmonsmile_env
 ```
 
+Install **HARMONSMILE** from PyPI:
+
 ```bash
 pip install harmonsmile
 ```
 
-> RDKit is required and installed automatically (`rdkit>=2022.09`).
 
+### For contributors/developers:
+
+Clone the repository:
+
+```bash
+git clone https://github.com/NanoBiostructuresRG/harmonsmile.git
+cd harmonsmile
+```
+
+Create and activate the development environment:
+
+```bash
+conda env create -f environment.yml
+conda activate harmonsmile_env
+```
+
+Install HARMONSMILE in editable mode with development dependencies:
+
+```bash
+python -m pip install -e .[dev]
+```
+
+> RDKit is a required runtime dependency (`rdkit>=2022.09`). For package users, it is declared in `pyproject.toml` and installed through the package dependency resolver. For contributors, `environment.yml` preinstalls RDKit from `conda-forge` for a stable local scientific stack.
 ---
 
 ## Quick Start

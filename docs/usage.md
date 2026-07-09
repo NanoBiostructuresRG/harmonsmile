@@ -2,11 +2,45 @@
 
 ## Installation
 
+### For package users:
+
+Create and activate a Python environment:
+
+```bash
+conda create -n harmonsmile_env python=3.11
+conda activate harmonsmile_env
+```
+
+Install **HARMONSMILE** from PyPI:
+
 ```bash
 pip install harmonsmile
 ```
 
-> RDKit is required and installed automatically (`rdkit>=2022.09`).
+
+### For contributors/developers:
+
+Clone the repository:
+
+```bash
+git clone https://github.com/NanoBiostructuresRG/harmonsmile.git
+cd harmonsmile
+```
+
+Create and activate the development environment:
+
+```bash
+conda env create -f environment.yml
+conda activate harmonsmile_env
+```
+
+Install HARMONSMILE in editable mode with development dependencies:
+
+```bash
+python -m pip install -e .[dev]
+```
+
+> RDKit is a required runtime dependency (`rdkit>=2022.09`). For package users, it is declared in `pyproject.toml` and installed through the package dependency resolver. For contributors, `environment.yml` preinstalls RDKit from `conda-forge` for a stable local scientific stack.
 
 ## Quick Start
 

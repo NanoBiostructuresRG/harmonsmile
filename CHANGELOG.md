@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] - 2026-07-08
+
+### Added
+- Added an RDKit-native lab harmonization engine through `HarmonizationResult` and `RDKitStandardizer.to_lab_harmonized()`.
+- Added `SMILES_Harmonized`, `SMILES_Harmonization_Status`, and `SMILES_Harmonization_Error` to `PubChemIngest`, `ChEMBLIngest`, and `SMILESPrep` outputs.
+- Added typed harmonization statuses for auditable row-level results, including missing, invalid, disallowed-elements, tautomer-limit, and general harmonization-failure cases.
+- Added RDKit-native MolStandardize handling for normalization, largest-fragment selection, allowed-elements validation, uncharging, reionization, tautomer canonicalization, and final canonical/isomeric/Kekulé serialization.
+
+### Changed
+- Documented the public SMILES column contract across `SMILES`, `SMILES_RDKit`, `SMILES_Harmonized`, harmonization status/error columns, and PubChem `ConnectivitySMILES`.
+- Clarified that `SMILES_RDKit` remains the v0.2.5-compatible RDKit canonical/isomeric/Kekulé representation and is not a full chemical harmonization layer.
+- Clarified that `SMILES_Harmonized` is intended for database harmonization, deduplication, and cross-source matching, not as a prediction of the most stable, most abundant, pH-specific, or biologically active tautomer.
+
+### Preserved
+- Preserved existing `SMILES_RDKit` behavior for compatibility with previous releases.
+- Preserved PubChem `ConnectivitySMILES` as a source-specific PubChem column.
+- Preserved rows when harmonization fails; failures are reported through `SMILES_Harmonization_Status` and `SMILES_Harmonization_Error`.
+
+### Not Added
+- Did not add tautomer ensemble export; `SMILES_Harmonized` stores one canonical harmonized representation per input row.
+
+---
 ## [0.2.5] - 2026-07-06
 
 ### Breaking changes
@@ -353,6 +375,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.3.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.5...v0.3.0
 [0.2.5]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.2...v0.2.3

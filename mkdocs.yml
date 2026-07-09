@@ -44,6 +44,12 @@ extra_css:
 extra:
   social:
     - icon: fontawesome/brands/github
+      link: https://github.com/NanoBiostructuresRG/harmonsmile
+      name: NanoBiostructuresRG/harmonsmile
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/harmonsmile/
+      name: HARMONSMILE on PyPI
+    - icon: material/account-group
       link: https://nanobiostructuresrg.github.io/
       name: NanoBiostructuresRG
 
