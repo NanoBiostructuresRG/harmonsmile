@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.1] - 2026-07-08
+
+### Fixed
+- Refined the RDKit-native SMILES harmonization policy after v0.3.0 post-release validation.
+- Preserved `SMILES_RDKit` as canonical/isomeric/Kekulé while emitting `SMILES_Harmonized` as canonical/isomeric/aromatic.
+- Replaced `SMILES_Harmonization_Error` with `SMILES_Harmonization_Message`.
+- Added controlled parent handling for simple salts and counterions, reporting transformations as `ok_with_warnings`.
+- Prevented ambiguous multi-component or organometallic structures from being silently reduced to false `ok` outputs.
+- Scoped RDKit log suppression to HARMONSMILE processing paths instead of globally silencing RDKit.
+- Restored and reordered PubChem output columns, preserving source/property fields and placing `InChI`/`InChIKey` as structural bridge fields.
+- Expanded the PubChem example input for post-release validation coverage.
+
+---
+
 ## [0.3.0] - 2026-07-08
 
 ### Added
@@ -375,6 +389,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.3.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.5...v0.3.0
 [0.2.5]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.3...v0.2.4
