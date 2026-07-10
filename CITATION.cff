@@ -13,12 +13,16 @@ repository-code: "https://github.com/NanoBiostructuresRG/harmonsmile"
 doi: "10.5281/zenodo.20275498"
 license: "LGPL-3.0-or-later"
 abstract: >-
-  HARMONSMILE is a toolkit for harmonizing SMILES strings to a consistent
-  convention: canonical + isomeric + Kekulized, as used by RDKit.
-  It automates the preparation of SMILES for cheminformatics workflows and
-  machine learning applications within the computational drug discovery pipeline,
-  enabling standardized comparison across PubChem, ChEMBL, and independent
-  molecular databases.
+  HARMONSMILE is a cheminformatics toolkit for preparing and harmonizing
+  molecular structure tables across PubChem, ChEMBL, and independent SMILES
+  datasets. It provides deterministic table loading, robust identifier handling,
+  RDKit-based SMILES canonicalization, and an auditable harmonization layer
+  for downstream curation, comparison, and machine learning workflows.
+  HARMONSMILE preserves source SMILES, emits a canonical/isomeric/Kekulé RDKit
+  representation for compatibility and deduplication, and produces a harmonized
+  canonical/isomeric/aromatic SMILES representation using controlled RDKit-native
+  standardization policies.
+
 keywords:
   - cheminformatics
   - SMILES

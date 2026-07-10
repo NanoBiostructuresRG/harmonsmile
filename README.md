@@ -23,17 +23,33 @@ PubChem, ChEMBL, and in-house sources.
 
 ## Purpose
 
-The primary objective of **HARMONSMILE** is to automate the preparation of molecular
-datasets for cheminformatics workflows and **phase 1** machine learning applications
-within the computational drug discovery pipeline.
+The primary objective of **HARMONSMILE** is to automate the preparation,
+standardization, and harmonization of molecular structure tables for
+cheminformatics workflows and machine learning applications within the
+computational drug discovery pipeline.
 
 The platform enables:
 
-- **Data Harmonization**: Standardizes SMILES strings to a consistent format -
-  **canonical + isomeric + Kekulized** - ensuring that the same molecule is
-  represented identically across different datasets and sources. It follows the
-  RDKit convention for canonicalization, which is widely adopted in the
-  cheminformatics community.
+* **Source-aware molecular table preparation**: Ingests molecular identifiers or
+  SMILES from PubChem, ChEMBL, and independent tabular datasets while preserving
+  source traceability.
+* **Deterministic identifier handling**: Uses robust, alias-aware input detection
+  for PubChem CIDs and emits a canonical `PubChem_CID` output column for
+  downstream interoperability.
+* **RDKit canonicalization**: Generates `SMILES_RDKit` as a
+  canonical/isomeric/Kekulé RDKit representation, preserving compatibility with
+  workflows that use Kekulized SMILES for deduplication or comparison.
+* **SMILES harmonization**: Generates `SMILES_Harmonized` as a
+  canonical/isomeric/aromatic representation after controlled RDKit-native
+  standardization and harmonization.
+* **Auditable status reporting**: Reports harmonization outcomes through
+  `SMILES_Harmonization_Status` and `SMILES_Harmonization_Message`,
+  distinguishing successful harmonization, controlled transformations,
+  unsupported ambiguous structures, and failures.
+* **Cross-source comparison**: Preserves structural bridge fields such as
+  `InChI` and `InChIKey` to support comparison across PubChem, ChEMBL, and
+  independent molecular databases.
+
 
 ---
 
