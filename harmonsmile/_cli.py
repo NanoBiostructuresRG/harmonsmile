@@ -100,7 +100,7 @@ def _parse(argv: list[str] | None = None) -> argparse.Namespace:
     pub = p.add_argument_group("PubChem (batch)")
     pub.add_argument("--pubchem-in",     dest="pub_in",         metavar="FILE")
     pub.add_argument("--pubchem-out",    dest="pub_out",        metavar="FILE")
-    pub.add_argument("--pubchem-cidcol", dest="pubchem_cidcol", default="PubChem CID", metavar="COL")
+    pub.add_argument("--pubchem-cidcol", dest="pubchem_cidcol", metavar="COL")
 
     chembl = p.add_argument_group("ChEMBL (batch)")
     chembl.add_argument("--chembl-in",    dest="chembl_in",    metavar="FILE")
@@ -206,7 +206,7 @@ def main(argv: list[str] | None = None) -> None:
         tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
         tmp.close()
         try:
-            pd.DataFrame([{"id": 1, "PubChem CID": cid}]).to_csv(tmp.name, index=False)
+            pd.DataFrame([{"id": 1, "PubChem_CID": cid}]).to_csv(tmp.name, index=False)
             cfg = PubChemConfig(input_path=tmp.name)
             df = PubChemIngest(cfg).run()
             save_table(df, out_path)

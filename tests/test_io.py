@@ -113,14 +113,26 @@ class TestLoadTable:
             os.unlink(path)
 
     def test_pubchem_cid_column_sanitized(self):
-        """PubChem CID column is sanitized."""
+        """PubChem CID column is left for the PubChem pipeline resolver."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv",
                                          delete=False, encoding="utf-8") as f:
             f.write("id,PubChem CID\n1,2723949.0\n")
             path = f.name
         try:
             df = load_table(path)
-            assert df["PubChem CID"].iloc[0] == "2723949"
+            assert df["PubChem CID"].iloc[0] == pytest.approx(2723949.0)
+        finally:
+            os.unlink(path)
+
+    def test_csv_uses_comma_delimiter_without_sniffing(self):
+        """CSV loading is deterministic and does not auto-detect semicolons."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv",
+                                         delete=False, encoding="utf-8") as f:
+            f.write("id;SMILES\n1;CCO\n")
+            path = f.name
+        try:
+            df = load_table(path)
+            assert list(df.columns) == ["id;SMILES"]
         finally:
             os.unlink(path)
 

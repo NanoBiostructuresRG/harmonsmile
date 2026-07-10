@@ -23,7 +23,7 @@ class TestParseBatchPubChem:
         args = _parse(_argv("--pubchem-in", "in.csv", "--pubchem-out", "out.csv"))
         assert args.pub_in == "in.csv"
         assert args.pub_out == "out.csv"
-        assert args.pubchem_cidcol == "PubChem CID"
+        assert args.pubchem_cidcol is None
 
     def test_pubchem_batch_custom_cidcol(self):
         args = _parse(_argv(
@@ -213,8 +213,8 @@ class TestMainSingleEntryPubChem:
             main(_argv("--pubchem-cid", "2723949"))
 
         df = captured_df[0]
-        assert "PubChem CID" in df.columns
-        assert str(df["PubChem CID"].iloc[0]) == "2723949"
+        assert "PubChem_CID" in df.columns
+        assert str(df["PubChem_CID"].iloc[0]) == "2723949"
 
 
 class TestMainSingleEntryChEMBL:

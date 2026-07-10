@@ -31,7 +31,8 @@ class PubChemConfig:
         contain path traversal patterns ('..').
     cid_col : str, optional
         Name of the PubChem CID column. Must not be empty or
-        whitespace-only. Defaults to 'PubChem CID'.
+        whitespace-only when provided. Defaults to None, which enables
+        deterministic alias-based auto-detection.
     props : tuple of str, optional
         PubChem properties to fetch. Must contain at least one valid
         property name. Defaults to all available properties.
@@ -57,7 +58,7 @@ class PubChemConfig:
     """
 
     input_path: str
-    cid_col: str = "PubChem CID"
+    cid_col: str | None = None
     props: tuple[str, ...] = (
         "SMILES", "ConnectivitySMILES", "MolecularFormula",
         "MolecularWeight", "InChI", "InChIKey", "XLogP", "TPSA",
@@ -71,7 +72,7 @@ class PubChemConfig:
             raise ValueError("input_path must not be empty.")
         if ".." in self.input_path:
             raise ValueError("input_path must not contain path traversal patterns ('..').")
-        if not self.cid_col or not self.cid_col.strip():
+        if self.cid_col is not None and not self.cid_col.strip():
             raise ValueError("cid_col must not be empty.")
         if not self.props:
             raise ValueError("props must contain at least one PubChem property.")

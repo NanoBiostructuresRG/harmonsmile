@@ -14,7 +14,7 @@ class TestPubChemConfig:
 
     def test_defaults(self):
         cfg = PubChemConfig(input_path="data/in.csv")
-        assert cfg.cid_col == "PubChem CID"
+        assert cfg.cid_col is None
         assert cfg.keep_extra_columns is False
         assert cfg.props == (
             "SMILES", "ConnectivitySMILES", "MolecularFormula",

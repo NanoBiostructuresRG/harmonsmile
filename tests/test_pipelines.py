@@ -55,7 +55,7 @@ class TestPubChemIngest:
     """PubChemIngest output contract tests."""
 
     def test_empty_input_raises(self):
-        path = _empty_csv(["id", "PubChem CID"])
+        path = _empty_csv(["id", "PubChem_CID"])
         cfg = PubChemConfig(input_path=path)
         mock_client = MagicMock()
         try:
@@ -66,7 +66,7 @@ class TestPubChemIngest:
             os.unlink(path)
 
     def test_missing_smiles_column_emits_warning(self, caplog):
-        path = _write_csv("id,PubChem CID\n1,702\n")
+        path = _write_csv("id,PubChem_CID\n1,702\n")
         cfg = PubChemConfig(input_path=path, props=("MolecularWeight",))
         mock_client = _StaticClient({"MolecularWeight": "46.07"})
 
@@ -79,7 +79,7 @@ class TestPubChemIngest:
             os.unlink(path)
 
     def test_run_returns_dataframe_and_does_not_create_output(self):
-        path = _write_csv("id,PubChem CID\n1,702\n")
+        path = _write_csv("id,PubChem_CID\n1,702\n")
         out_path = path.replace(".csv", "_out.csv")
         mock_client = _StaticClient({
             "SMILES": "CCO",
@@ -97,7 +97,7 @@ class TestPubChemIngest:
             os.unlink(path)
 
     def test_strict_schema_by_default(self):
-        path = _write_csv("id,PubChem CID,source_note\n1,702,keep me only if asked\n")
+        path = _write_csv("id,PubChem_CID,source_note\n1,702,keep me only if asked\n")
         mock_client = _StaticClient({
             "SMILES": "CCO",
             "ConnectivitySMILES": "CCO",
@@ -120,7 +120,7 @@ class TestPubChemIngest:
                 std=_std(),
             ).run()
             assert list(out.columns) == [
-                "id", "PubChem CID", "InChI", "InChIKey",
+                "id", "PubChem_CID", "InChI", "InChIKey",
                 "SMILES", "ConnectivitySMILES",
                 "SMILES_RDKit",
                 "SMILES_Harmonized", "SMILES_Harmonization_Status",
@@ -143,7 +143,7 @@ class TestPubChemIngest:
             os.unlink(path)
 
     def test_keep_extra_columns_preserves_metadata_but_not_index_artifacts(self):
-        path = _write_csv("Unnamed: 0,id,PubChem CID,source_note\n0,1,702,metadata\n")
+        path = _write_csv("Unnamed: 0,id,PubChem_CID,source_note\n0,1,702,metadata\n")
         mock_client = _StaticClient({"SMILES": "CCO"})
         try:
             out = PubChemIngest(
@@ -154,6 +154,90 @@ class TestPubChemIngest:
             assert "source_note" in out.columns
             assert out.columns[-1] == "source_note"
             assert "Unnamed: 0" not in out.columns
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.parametrize(
+        "column",
+        ["PubChem CID", "PubChem_CID", "PubChemCID", "CID"],
+    )
+    def test_pubchem_cid_input_aliases_are_accepted(self, column):
+        path = _write_csv(f"id,{column}\n1,702\n")
+        mock_client = _StaticClient({"SMILES": "CCO"})
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert "PubChem_CID" in out.columns
+            assert "PubChem CID" not in out.columns
+            assert out.loc[0, "PubChem_CID"] == "702"
+        finally:
+            os.unlink(path)
+
+    def test_requested_cid_column_uses_exact_match_first(self):
+        path = _write_csv("id,CID,source\n1,702,999\n")
+        mock_client = _StaticClient({"SMILES": "CCO"})
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path, cid_col="CID"),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert out.loc[0, "PubChem_CID"] == "702"
+        finally:
+            os.unlink(path)
+
+    def test_requested_cid_column_uses_normalized_alias_match(self):
+        path = _write_csv("id,PubChem_CID\n1,702\n")
+        mock_client = _StaticClient({"SMILES": "CCO"})
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path, cid_col="pubchem cid"),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert out.loc[0, "PubChem_CID"] == "702"
+        finally:
+            os.unlink(path)
+
+    def test_requested_cid_column_uses_normalized_non_alias_match(self):
+        path = _write_csv("id,My CID\n1,702\n")
+        mock_client = _StaticClient({"SMILES": "CCO"})
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path, cid_col="my-cid"),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert out.loc[0, "PubChem_CID"] == "702"
+        finally:
+            os.unlink(path)
+
+    def test_ambiguous_alias_columns_fail_clearly(self):
+        path = _write_csv("id,PubChem_CID,CID\n1,702,703\n")
+        try:
+            with pytest.raises(ValueError, match="Ambiguous PubChem CID columns"):
+                PubChemIngest(PubChemConfig(input_path=path)).run()
+        finally:
+            os.unlink(path)
+
+    def test_requested_ambiguous_normalized_column_fails_clearly(self):
+        path = _write_csv("id,My CID,my_cid\n1,702,703\n")
+        try:
+            with pytest.raises(ValueError, match="ambiguous after normalization"):
+                PubChemIngest(
+                    PubChemConfig(input_path=path, cid_col="my-cid")
+                ).run()
+        finally:
+            os.unlink(path)
+
+    def test_missing_cid_column_fails_with_available_columns(self):
+        path = _write_csv("id,source\n1,702\n")
+        try:
+            with pytest.raises(ValueError, match=r"Available columns: \['id', 'source'\]"):
+                PubChemIngest(PubChemConfig(input_path=path)).run()
         finally:
             os.unlink(path)
 
