@@ -85,9 +85,9 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
     """
     Load a tabular file into a DataFrame.
 
-    Supports CSV, TSV, TXT, XLSX, XLSM, and XLS formats.
-    Automatically detects delimiter for text files; falls back to
-    semicolon separator with latin-1 encoding if auto-detection fails.
+    Supports CSV, TSV, TXT, XLSX, XLSM, and XLS formats. CSV files use
+    comma delimiters, TSV/TXT files use tab delimiters, and Excel files
+    are loaded with :func:`pandas.read_excel`.
 
     Parameters
     ----------
@@ -97,8 +97,7 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Loaded DataFrame with cleaned 'id' and 'PubChem CID' columns
-        if present.
+        Loaded DataFrame with cleaned 'id' column if present.
 
     Raises
     ------
@@ -118,11 +117,10 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
         raise FileNotFoundError(f"Input file not found: {path}")
 
     ext = os.path.splitext(path)[1].lower()
-    if ext in (".csv", ".tsv", ".txt"):
-        try:
-            df = pd.read_csv(path, engine="python", sep=None, encoding="utf-8-sig")
-        except Exception:
-            df = pd.read_csv(path, sep=";", encoding="latin-1")
+    if ext == ".csv":
+        df = pd.read_csv(path, sep=",", encoding="utf-8-sig")
+    elif ext in (".tsv", ".txt"):
+        df = pd.read_csv(path, sep="\t", encoding="utf-8-sig")
     elif ext in (".xlsx", ".xlsm", ".xls"):
         df = pd.read_excel(path)
     else:
@@ -135,8 +133,6 @@ def load_table(path: str | os.PathLike) -> pd.DataFrame:
 
     if "id" in df.columns:
         df["id"] = pd.to_numeric(df["id"], errors="coerce").astype("Int64")
-    if "PubChem CID" in df.columns:
-        df["PubChem CID"] = df["PubChem CID"].apply(_sanitize_cid)
     return df
 
 

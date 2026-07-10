@@ -9,22 +9,73 @@ compound data, :class:`ChEMBLIngest` for ChEMBL compound data, and
 
 from __future__ import annotations
 import logging
+import re
 
 import pandas as pd
 
 from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
-from .io import load_table, _drop_accidental_index_columns
+from .io import load_table, _drop_accidental_index_columns, _sanitize_cid
 from .chembl import _ChEMBLClient
 from .pubchem import _PubChemClient
 from .standardize import RDKitStandardizer
 
 logger = logging.getLogger(__name__)
 
+PUBCHEM_CID_COLUMN = "PubChem_CID"
+_PUBCHEM_CID_ALIAS_KEYS = frozenset({"pubchemcid", "cid"})
 _HARMONIZATION_COLUMNS = [
     "SMILES_Harmonized",
     "SMILES_Harmonization_Status",
     "SMILES_Harmonization_Message",
 ]
+
+
+def _normalize_pubchem_cid_column_name(column: object) -> str:
+    return re.sub(r"[\s_-]+", "", str(column)).casefold()
+
+
+def _pubchem_alias_columns(df: pd.DataFrame) -> list[str]:
+    return [
+        col for col in df.columns
+        if _normalize_pubchem_cid_column_name(col) in _PUBCHEM_CID_ALIAS_KEYS
+    ]
+
+
+def _resolve_pubchem_cid_column(df: pd.DataFrame, requested: str | None) -> str:
+    columns = list(df.columns)
+    if requested is not None:
+        if requested in df.columns:
+            return requested
+
+        requested_key = _normalize_pubchem_cid_column_name(requested)
+        matches = [
+            col for col in columns
+            if _normalize_pubchem_cid_column_name(col) == requested_key
+        ]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise ValueError(
+                f"CID column '{requested}' is ambiguous after normalization: {matches}. "
+                "Pass --pubchem-cidcol with an explicit unambiguous column."
+            )
+        raise ValueError(
+            f"CID column '{requested}' not found. Available columns: {columns}"
+        )
+
+    matches = _pubchem_alias_columns(df)
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError(
+            f"Ambiguous PubChem CID columns found: {matches}. "
+            "Pass --pubchem-cidcol with an explicit unambiguous column."
+        )
+    raise ValueError(
+        "No PubChem CID column found. Expected one of "
+        "['PubChem_CID', 'PubChem CID', 'PubChemCID', 'CID']. "
+        f"Available columns: {columns}"
+    )
 
 
 def _append_harmonization_columns(
@@ -121,13 +172,14 @@ class PubChemIngest:
                 f"Input file has zero rows: {self.cfg.input_path}"
             )
 
-        if self.cfg.cid_col not in df.columns:
-            raise ValueError(
-                f"CID column '{self.cfg.cid_col}' not found. "
-                f"Available columns: {list(df.columns)}"
-            )
+        cid_col = _resolve_pubchem_cid_column(df, self.cfg.cid_col)
+        if cid_col != PUBCHEM_CID_COLUMN:
+            if PUBCHEM_CID_COLUMN in df.columns:
+                df = df.drop(columns=[PUBCHEM_CID_COLUMN])
+            df = df.rename(columns={cid_col: PUBCHEM_CID_COLUMN})
+        df[PUBCHEM_CID_COLUMN] = df[PUBCHEM_CID_COLUMN].apply(_sanitize_cid)
 
-        props = df[self.cfg.cid_col].apply(
+        props = df[PUBCHEM_CID_COLUMN].apply(
             lambda c: self.client.fetch_props(c, list(self.cfg.props))
         )
         props_df = pd.DataFrame(list(props))
@@ -149,7 +201,7 @@ class PubChemIngest:
 
         desired = [
             "id",
-            "PubChem CID",
+            PUBCHEM_CID_COLUMN,
             "InChI",
             "InChIKey",
             "SMILES",
