@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.2] - 2026-07-09
+
+### Fixed
+- Made PubChem CID input detection deterministic and alias-aware.
+- Changed the canonical PubChem CID output column from `PubChem CID` to `PubChem_CID`.
+- Updated the PubChem example input to use `PubChem_CID`.
+- Accepted common PubChem CID input aliases, including `PubChem_CID`, `PubChem CID`, `PubChemCID`, and `CID`.
+- Added exact-first, normalized-fallback matching for explicit `--pubchem-cidcol` values.
+- Removed ambiguous CSV delimiter sniffing for `.csv` inputs by using comma-separated loading deterministically.
+- Preserved the v0.3.1 PubChem output schema with `PubChem_CID` as the canonical identifier column.
+
+---
+
 ## [0.3.1] - 2026-07-08
 
 ### Fixed
@@ -389,6 +402,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.3.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.5...v0.3.0
 [0.2.5]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.4...v0.2.5
