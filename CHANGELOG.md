@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.3] - 2026-08-15
 
+### Added
+- Ruff linting configured in `pyproject.toml` (rulesets `F`, `I`, `UP`,
+  `RUF022`) and enforced in CI.
+- Mypy type checking configured in `pyproject.toml` and enforced in CI.
+- `ruff` and `mypy` added to the `dev` optional dependency group, which
+  previously did not provide the linter that `CONTRIBUTING.md` asks
+  contributors to run.
+
 ### Changed
 - Corrected example file paths and column names across the README,
   `docs/usage.md`, and the CLI epilog: the SMILES example dataset is
@@ -33,6 +41,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the closed `dev/v0.2.4` readiness branch.
 - `examples/fetch_pubchem.py` now emits the canonical `PubChem_CID` column
   instead of the legacy `PubChem CID` name.
+- Applied ruff automatic fixes across the package, tests, and examples: import
+  ordering, `__all__` sorting, and removal of unused and duplicated imports.
+- `Callable` is now imported from `collections.abc` instead of `typing` in the
+  PubChem and ChEMBL clients.
+- Narrowed the `__exit__` return annotation of both HTTP clients from `bool` to
+  `Literal[False]`, matching the documented behavior that exceptions are never
+  suppressed.
+- The CLI now uses a distinct configuration variable per pipeline instead of
+  reusing a single `cfg` name across incompatible config types.
+- `docs.yml` installs documentation dependencies from the `docs` extra and runs
+  `mkdocs build --strict` before deploying, so broken references fail the build
+  instead of being published silently.
 
 ### Removed
 - `environment.yml`. RDKit was declared both there and in `pyproject.toml`;
@@ -47,9 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `environment.yml` removed.
 
 ### Compatibility
-- Documentation and packaging only. No changes to the public API, the output
-  column contract, or harmonization behavior. Downstream consumers are
-  unaffected.
+- No changes to the public API surface, the output column contract, or
+  harmonization behavior. The only signature change is the `__exit__` return
+  annotation on two private HTTP clients, narrowed from `bool` to
+  `Literal[False]` without any change in returned value. Downstream consumers
+  are unaffected.
 
 ---
 
