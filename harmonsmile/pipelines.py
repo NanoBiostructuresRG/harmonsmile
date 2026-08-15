@@ -8,14 +8,15 @@ compound data, :class:`ChEMBLIngest` for ChEMBL compound data, and
 """
 
 from __future__ import annotations
+
 import logging
 import re
 
 import pandas as pd
 
-from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
-from .io import load_table, _drop_accidental_index_columns, _sanitize_cid
 from .chembl import _ChEMBLClient
+from .config import ChEMBLConfig, PubChemConfig, SMILESConfig
+from .io import _drop_accidental_index_columns, _sanitize_cid, load_table
 from .pubchem import _PubChemClient
 from .standardize import RDKitStandardizer
 

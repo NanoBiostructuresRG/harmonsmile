@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.3] - 2026-08-15
+
+### Added
+- Ruff linting configured in `pyproject.toml` (rulesets `F`, `I`, `UP`,
+  `RUF022`) and enforced in CI.
+- Mypy type checking configured in `pyproject.toml` and enforced in CI.
+- `ruff` and `mypy` added to the `dev` optional dependency group, which
+  previously did not provide the linter that `CONTRIBUTING.md` asks
+  contributors to run.
+- `Statement on AI Assistance` section in the README and documentation home,
+  disclosing the use of generative AI tools in the development and maintenance
+  of the package, in line with the pyOpenSci generative AI policy.
+
+### Changed
+- Corrected example file paths and column names across the README,
+  `docs/usage.md`, and the CLI epilog: the SMILES example dataset is
+  `examples/example_smiles.txt`, it is tab-delimited, and its SMILES column is
+  named `SMILES`.
+- Documented the ChEMBL batch CLI mode (`--chembl-in` / `--chembl-out`) in the
+  README, which previously covered only the PubChem and SMILES batch modes.
+- Documented the `--pubchem-cidcol` and `--chembl-idcol` options together with
+  their `cid_col` and `chembl_id_col` configuration counterparts.
+- Updated the Pipelines and Input Format tables to present `PubChem_CID` as the
+  canonical column and to list the accepted input aliases.
+- Corrected the list of supported input formats to CSV, TSV, TXT, XLSX, XLSM,
+  and XLS, matching `load_table`.
+- Expanded the quickstart with a statement of what it achieves, a note that the
+  example datasets require cloning the repository, and links to the usage guide
+  and API reference.
+- Added a `to_lab_harmonized` example clarifying that it returns a
+  `HarmonizationResult` rather than a string.
+- Rewrote the README roadmap to reflect released versions and to state that
+  fingerprint and descriptor generation are out of scope.
+- `CONTRIBUTING.md`: pull requests now branch from and target `main` instead of
+  the closed `dev/v0.2.4` readiness branch.
+- `examples/fetch_pubchem.py` now emits the canonical `PubChem_CID` column
+  instead of the legacy `PubChem CID` name.
+- Applied ruff automatic fixes across the package, tests, and examples: import
+  ordering, `__all__` sorting, and removal of unused and duplicated imports.
+- `Callable` is now imported from `collections.abc` instead of `typing` in the
+  PubChem and ChEMBL clients.
+- Narrowed the `__exit__` return annotation of both HTTP clients from `bool` to
+  `Literal[False]`, matching the documented behavior that exceptions are never
+  suppressed.
+- The CLI now uses a distinct configuration variable per pipeline instead of
+  reusing a single `cfg` name across incompatible config types.
+- `docs.yml` installs documentation dependencies from the `docs` extra and runs
+  `mkdocs build --strict` before deploying, so broken references fail the build
+  instead of being published silently.
+
+### Removed
+- `environment.yml`. RDKit was declared both there and in `pyproject.toml`;
+  it is now declared once, and the contributor path is a single
+  `python -m pip install -e ".[dev]"` in any Python 3.11+ environment.
+- Obsolete "Future Releases (Planned)" section from this changelog, which
+  described v0.3.0 as upcoming after it had been released.
+
+### Internal
+- `version.py`: version bumped to `0.3.3`.
+- README project structure updated: 187 tests, `docs/` listed,
+  `environment.yml` removed.
+
+### Compatibility
+- No changes to the public API surface, the output column contract, or
+  harmonization behavior. The only signature change is the `__exit__` return
+  annotation on two private HTTP clients, narrowed from `bool` to
+  `Literal[False]` without any change in returned value. Downstream consumers
+  are unaffected.
+
+---
+
 ## [0.3.2] - 2026-07-09
 
 ### Fixed
@@ -394,14 +465,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Future Releases (Planned)
-
-### [0.3.0] - ML-ready features
-- Standardized pipeline to generate ECFP fingerprints (with/without chirality).
-- InChI / InChIKey generation for deduplication and robust cross-database matching.
-
----
-
+[0.3.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.5...v0.3.0

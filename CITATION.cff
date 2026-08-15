@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning"
-version: "0.3.2"
-date-released: "2026-07-09"
+version: "0.3.3"
+date-released: "2026-08-15"
 authors:
   - family-names: "Contreras-Torres"
     given-names: "Flavio F."

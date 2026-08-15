@@ -18,23 +18,32 @@ Open an issue with the `enhancement` label describing:
 
 ### Submitting a pull request
 1. Fork the repository
-2. Create a branch from `dev/v0.2.4` during this readiness cycle:
-   `git switch -c dev/your-feature`
+2. Create a branch from `main`: `git switch -c dev/your-feature`
 3. Make your changes
 4. Run the test suite: `pytest tests/`
-5. Push your branch and open a pull request against `dev/v0.2.4`
+5. Push your branch and open a pull request against `main`
 
 Pull requests should pass CI before merge. User-facing changes should include
 appropriate documentation and changelog updates.
 
 ## Development setup
 
+Create an environment with Python 3.11 or newer using the tool you prefer
+(conda, venv, uv, or similar), then install the package in editable mode with
+its development dependencies:
+
 ```bash
 git clone https://github.com/NanoBiostructuresRG/harmonsmile.git
 cd harmonsmile
-conda env create -f environment.yml
-conda activate harmonsmile_env
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
+```
+
+RDKit is resolved automatically as a package dependency. To build the
+documentation locally, install the `docs` extra as well:
+
+```bash
+python -m pip install -e ".[dev,docs]"
+mkdocs serve
 ```
 
 ## Code style

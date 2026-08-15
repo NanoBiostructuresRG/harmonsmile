@@ -6,11 +6,11 @@ Usage:
     python fetch_pubchem.py
 
 Output:
-    pubchem_fetch_results.csv  — columns: id, PubChem CID, name
+    pubchem_fetch_results.csv  — columns: id, PubChem_CID, name
 """
 
-import requests
 import pandas as pd
+import requests
 
 BASE_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 
@@ -56,7 +56,7 @@ def main():
     rows = []
     for i, cid in enumerate(cids, start=1):
         name = fetch_name_by_cid(cid)
-        rows.append({"id": i, "PubChem CID": str(cid), "name": name})
+        rows.append({"id": i, "PubChem_CID": str(cid), "name": name})
         print(f"  [{i}/{len(cids)}] CID {cid} — {name}")
 
     df = pd.DataFrame(rows)

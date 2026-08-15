@@ -4,18 +4,18 @@
 import logging
 import os
 import tempfile
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-from unittest.mock import MagicMock
 
 from harmonsmile import (
+    ChEMBLConfig,
     HarmonizationResult,
     PubChemConfig,
-    ChEMBLConfig,
     SMILESConfig,
 )
-from harmonsmile.pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
+from harmonsmile.pipelines import ChEMBLIngest, PubChemIngest, SMILESPrep
 
 
 def _write_csv(content: str) -> str:

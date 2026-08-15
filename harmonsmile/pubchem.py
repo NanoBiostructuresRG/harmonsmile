@@ -7,9 +7,11 @@ access, with exponential backoff and persistent connection reuse.
 """
 
 from __future__ import annotations
+
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any, Literal
 
 import requests
 
@@ -111,7 +113,7 @@ class _PubChemClient:
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Literal[False]:
         """
         Exit the context manager and release resources.
 
@@ -126,7 +128,7 @@ class _PubChemClient:
 
         Returns
         -------
-        bool
+        Literal[False]
             Always False; exceptions are not suppressed.
         """
         self.close()

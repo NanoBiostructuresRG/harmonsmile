@@ -38,6 +38,8 @@ dev = [
     "pytest>=7.0",
     "build>=1.0",
     "twine>=4.0",
+    "ruff>=0.16",
+    "mypy>=1.11",
 ]
 docs = [
     "mkdocs>=1.6",
@@ -71,3 +73,30 @@ exclude = [
 testpaths = ["tests"]
 tmp_path_retention_count = 0
 tmp_path_retention_policy = "none"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["site", ".pytest_cache"]
+
+[tool.ruff.lint]
+select = ["F", "I", "UP", "RUF022"]
+ignore = [
+    # Kept explicit for when the BLE ruleset is enabled: RDKit and the HTTP
+    # clients raise unpredictable exception types, so broad handlers here are
+    # deliberate. Failures are converted into typed return values (None, or
+    # HarmonizationResult with status="failed") rather than propagated.
+    # This is part of the public contract.
+    "BLE001",
+]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+files = ["harmonsmile"]
+# The rdkit-stubs package shipped with RDKit contains a syntax error
+# (rdchem.pyi: non-default argument follows default argument) that aborts
+# type checking before this project's own code is examined. Disabling
+# site-packages stubs treats third-party libraries as untyped, which is
+# acceptable here since the goal is internal type consistency.
+no_site_packages = true

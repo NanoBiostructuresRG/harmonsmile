@@ -33,6 +33,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]" build twine
 
+      - name: Lint with ruff
+        run: python -m ruff check .
+
+      - name: Type check with mypy
+        run: python -m mypy
+
       - name: Run tests
         run: python -m pytest tests -p no:cacheprovider --basetemp .pytest_tmp
 
