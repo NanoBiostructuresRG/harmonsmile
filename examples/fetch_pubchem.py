@@ -9,8 +9,8 @@ Output:
     pubchem_fetch_results.csv  — columns: id, PubChem_CID, name
 """
 
-import requests
 import pandas as pd
+import requests
 
 BASE_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 

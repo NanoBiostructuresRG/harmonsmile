@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """Security validation tests for harmonsmile."""
 
-import pytest
 from unittest.mock import MagicMock, patch
-from harmonsmile import PubChemConfig, ChEMBLConfig, SMILESConfig
+
+import pandas as pd
+import pytest
+
+from harmonsmile import ChEMBLConfig, PubChemConfig, SMILESConfig
 from harmonsmile.io import save_table
 from harmonsmile.pubchem import _PubChemClient
-import pandas as pd
 
 
 class TestPubChemConfigSecurity:
@@ -114,7 +116,6 @@ class TestPubChemClientSecurity:
 
     def test_cid_injection_stripped(self):
         """Non-numeric characters in CID are stripped before URL construction."""
-        from unittest.mock import MagicMock, patch
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "PropertyTable": {"Properties": [{"SMILES": "CCO"}]}

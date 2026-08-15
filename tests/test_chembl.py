@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """Unit tests for harmonsmile.chembl."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from harmonsmile.chembl import _ChEMBLClient
 
 _MOCK_RESPONSE = {

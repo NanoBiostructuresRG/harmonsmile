@@ -7,9 +7,11 @@ access, with exponential backoff and persistent connection reuse.
 """
 
 from __future__ import annotations
+
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import requests
 

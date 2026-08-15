@@ -71,27 +71,27 @@ Fetch and harmonize ChEMBL data:
 >>> save_table(df, "results/chembl_harmonized.csv")
 """
 
-from .standardize import HarmonizationResult, RDKitStandardizer
-from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
-from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
+from .config import ChEMBLConfig, PubChemConfig, SMILESConfig
 from .io import load_table, save_table
-from .version import __version__, PROJECT_NAME, PROJECT_VERSION, PROJECT_STATUS
+from .pipelines import ChEMBLIngest, PubChemIngest, SMILESPrep
+from .standardize import HarmonizationResult, RDKitStandardizer
+from .version import PROJECT_NAME, PROJECT_STATUS, PROJECT_VERSION, __version__
 
 __author__ = "Flavio F. Contreras-Torres"
 
 __all__ = [
-    "RDKitStandardizer",
-    "HarmonizationResult",
-    "PubChemIngest",
-    "PubChemConfig",
-    "ChEMBLIngest",
+    "PROJECT_NAME",
+    "PROJECT_STATUS",
+    "PROJECT_VERSION",
     "ChEMBLConfig",
-    "SMILESPrep",
+    "ChEMBLIngest",
+    "HarmonizationResult",
+    "PubChemConfig",
+    "PubChemIngest",
+    "RDKitStandardizer",
     "SMILESConfig",
+    "SMILESPrep",
+    "__version__",
     "load_table",
     "save_table",
-    "__version__",
-    "PROJECT_NAME",
-    "PROJECT_VERSION",
-    "PROJECT_STATUS",
 ]

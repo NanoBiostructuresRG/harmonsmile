@@ -9,6 +9,7 @@ Defines immutable configuration objects for each pipeline:
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 VALID_PUBCHEM_PROPS: frozenset[str] = frozenset({

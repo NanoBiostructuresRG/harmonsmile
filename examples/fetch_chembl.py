@@ -9,9 +9,10 @@ Output:
     chembl_fetch_results.csv  — columns: id, ChEMBL ID, name, molecule_type, max_phase
 """
 
-import requests
-import pandas as pd
 from urllib.parse import urlencode
+
+import pandas as pd
+import requests
 
 BASE_URL = "https://www.ebi.ac.uk/chembl/api/data"
 

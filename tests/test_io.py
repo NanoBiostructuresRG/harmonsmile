@@ -3,8 +3,10 @@
 
 import os
 import tempfile
-import pytest
+
 import pandas as pd
+import pytest
+
 from harmonsmile.io import _sanitize_cid, load_table, save_table
 
 

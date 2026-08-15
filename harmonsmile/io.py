@@ -7,11 +7,12 @@ tabular chemical data.
 """
 
 from __future__ import annotations
+
 import os
 import re
 from typing import Any
-import pandas as pd
 
+import pandas as pd
 
 _UNNAMED_INDEX_RE = re.compile(
     r"^unnamed(?:[:_\s.-]*\d+)+(?:[:_\s.-]*level[:_\s.-]*\d+)?$",

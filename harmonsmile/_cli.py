@@ -25,17 +25,17 @@ Examples
 """
 
 from __future__ import annotations
-from .version import __version__
+
 import argparse
 import os
 import tempfile
 
 import pandas as pd
 
-from .config import PubChemConfig, ChEMBLConfig, SMILESConfig
+from .config import ChEMBLConfig, PubChemConfig, SMILESConfig
 from .io import save_table
-from .pipelines import PubChemIngest, ChEMBLIngest, SMILESPrep
-
+from .pipelines import ChEMBLIngest, PubChemIngest, SMILESPrep
+from .version import __version__
 
 _EPILOG = """\
 examples:

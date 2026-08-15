@@ -38,6 +38,7 @@ dev = [
     "pytest>=7.0",
     "build>=1.0",
     "twine>=4.0",
+    "ruff>=0.16",
 ]
 docs = [
     "mkdocs>=1.6",
@@ -71,3 +72,19 @@ exclude = [
 testpaths = ["tests"]
 tmp_path_retention_count = 0
 tmp_path_retention_policy = "none"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["site", ".pytest_cache"]
+
+[tool.ruff.lint]
+select = ["F", "I", "UP", "RUF022"]
+ignore = [
+    # Kept explicit for when the BLE ruleset is enabled: RDKit and the HTTP
+    # clients raise unpredictable exception types, so broad handlers here are
+    # deliberate. Failures are converted into typed return values (None, or
+    # HarmonizationResult with status="failed") rather than propagated.
+    # This is part of the public contract.
+    "BLE001",
+]

@@ -6,4 +6,4 @@ PROJECT_NAME = "HARMONSMILE"
 PROJECT_VERSION = __version__
 PROJECT_STATUS = "alpha"
 
-__all__ = ["__version__", "PROJECT_NAME", "PROJECT_VERSION", "PROJECT_STATUS"]
+__all__ = ["PROJECT_NAME", "PROJECT_STATUS", "PROJECT_VERSION", "__version__"]

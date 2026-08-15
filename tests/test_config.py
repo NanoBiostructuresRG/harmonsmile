@@ -2,7 +2,8 @@
 """Unit tests for harmonsmile.config."""
 
 import pytest
-from harmonsmile import PubChemConfig, ChEMBLConfig, SMILESConfig
+
+from harmonsmile import ChEMBLConfig, PubChemConfig, SMILESConfig
 
 
 class TestPubChemConfig:
