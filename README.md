@@ -408,3 +408,29 @@ Monterrey, Mexico
 This project is licensed under the terms of the
 [GNU Lesser General Public License v3.0 or later](LICENSE).
 SPDX identifier: `LGPL-3.0-or-later`.
+
+---
+
+## Statement on AI Assistance
+
+I used conversational AI assistance (Claude, Anthropic) during the development
+and maintenance of HARMONSMILE. Claude Code was also used to audit the
+repository against packaging requirements; it reported findings, and I applied
+the resulting changes myself.
+
+The assistance was primarily conversational and focused on documentation,
+packaging configuration, dependency management, and incremental refinement. It
+also covered small, localized code changes such as type annotations, variable
+naming, and automated import ordering. I engaged with the tool as I would with
+a technical colleague — asking questions, discussing trade-offs, and iterating
+on solutions.
+
+The scientific design — including the harmonization policy, column contracts,
+pipeline boundaries, and reproducibility strategy — is mine. I made the
+decisions about what the tool should do, how it should behave, and what
+constitutes a correct result.
+
+I reviewed all changes before integration, ran the test suite, and take full
+responsibility for the final output. The repository history shows incremental
+commits, CI runs, and a detailed CHANGELOG, reflecting iterative development
+rather than generated output.

@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ruff` and `mypy` added to the `dev` optional dependency group, which
   previously did not provide the linter that `CONTRIBUTING.md` asks
   contributors to run.
+- `Statement on AI Assistance` section in the README and documentation home,
+  disclosing the use of generative AI tools in the development and maintenance
+  of the package, in line with the pyOpenSci generative AI policy.
 
 ### Changed
 - Corrected example file paths and column names across the README,
