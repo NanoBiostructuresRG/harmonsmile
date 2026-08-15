@@ -174,29 +174,29 @@ def main(argv: list[str] | None = None) -> None:
     ran_any = False
 
     if args.pub_in and args.pub_out:
-        cfg = PubChemConfig(
+        pub_cfg = PubChemConfig(
             input_path=args.pub_in,
             cid_col=args.pubchem_cidcol,
         )
-        df = PubChemIngest(cfg).run()
+        df = PubChemIngest(pub_cfg).run()
         save_table(df, args.pub_out)
         ran_any = True
 
     if args.chembl_in and args.chembl_out:
-        cfg = ChEMBLConfig(
+        chembl_cfg = ChEMBLConfig(
             input_path=args.chembl_in,
             chembl_id_col=args.chembl_idcol,
         )
-        df = ChEMBLIngest(cfg).run()
+        df = ChEMBLIngest(chembl_cfg).run()
         save_table(df, args.chembl_out)
         ran_any = True
 
     if args.smiles_in and args.smiles_out and args.smiles_col:
-        cfg = SMILESConfig(
+        smiles_cfg = SMILESConfig(
             input_path=args.smiles_in,
             smiles_col=args.smiles_col,
         )
-        df = SMILESPrep(cfg).run()
+        df = SMILESPrep(smiles_cfg).run()
         save_table(df, args.smiles_out)
         ran_any = True
 
@@ -207,8 +207,8 @@ def main(argv: list[str] | None = None) -> None:
         tmp.close()
         try:
             pd.DataFrame([{"id": 1, "PubChem_CID": cid}]).to_csv(tmp.name, index=False)
-            cfg = PubChemConfig(input_path=tmp.name)
-            df = PubChemIngest(cfg).run()
+            single_pub_cfg = PubChemConfig(input_path=tmp.name)
+            df = PubChemIngest(single_pub_cfg).run()
             save_table(df, out_path)
         finally:
             os.unlink(tmp.name)
@@ -221,10 +221,10 @@ def main(argv: list[str] | None = None) -> None:
         tmp.close()
         try:
             pd.DataFrame([{"id": 1, "ChEMBL ID": chembl_id}]).to_csv(tmp.name, index=False)
-            cfg = ChEMBLConfig(
+            single_chembl_cfg = ChEMBLConfig(
                 input_path=tmp.name,
             )
-            df = ChEMBLIngest(cfg).run()
+            df = ChEMBLIngest(single_chembl_cfg).run()
             save_table(df, out_path)
         finally:
             os.unlink(tmp.name)
