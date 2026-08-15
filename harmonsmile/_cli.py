@@ -49,7 +49,7 @@ examples:
   harmonsmile --chembl-in examples/example_chembl.csv --chembl-out results/chembl_out.csv
 
   # SMILES batch — harmonize an existing SMILES column (COCONUT, in-house, etc.)
-  harmonsmile --smiles-in examples/example_smiles.csv --smiles-col canonical_smiles --smiles-out results/smiles_out.csv
+  harmonsmile --smiles-in examples/example_smiles.txt --smiles-col SMILES --smiles-out results/smiles_out.csv
 
   # Single entry — fetch one compound by PubChem CID (output saved to results/)
   harmonsmile --pubchem-cid 2723949
@@ -63,7 +63,7 @@ examples:
   # Run multiple pipelines in one call
   harmonsmile \\
     --pubchem-in examples/example_pubchem.csv --pubchem-out results/pubchem_out.csv \\
-    --smiles-in  examples/example_smiles.csv --smiles-col SMILES --smiles-out results/smiles_out.csv
+    --smiles-in  examples/example_smiles.txt --smiles-col SMILES --smiles-out results/smiles_out.csv
 """
 
 _NOTHING_TO_RUN = """\
@@ -159,7 +159,7 @@ def main(argv: list[str] | None = None) -> None:
 
     Batch mode — SMILES:
 
-    >>> main(["--smiles-in", "examples/example_smiles.csv", "--smiles-col", "SMILES",
+    >>> main(["--smiles-in", "examples/example_smiles.txt", "--smiles-col", "SMILES",
     ...       "--smiles-out", "results/smiles_out.csv"])
 
     Single Entry — PubChem CID:

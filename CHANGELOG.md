@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.3] - 2026-08-15
+
+### Changed
+- Corrected example file paths and column names across the README,
+  `docs/usage.md`, and the CLI epilog: the SMILES example dataset is
+  `examples/example_smiles.txt`, it is tab-delimited, and its SMILES column is
+  named `SMILES`.
+- Documented the ChEMBL batch CLI mode (`--chembl-in` / `--chembl-out`) in the
+  README, which previously covered only the PubChem and SMILES batch modes.
+- Documented the `--pubchem-cidcol` and `--chembl-idcol` options together with
+  their `cid_col` and `chembl_id_col` configuration counterparts.
+- Updated the Pipelines and Input Format tables to present `PubChem_CID` as the
+  canonical column and to list the accepted input aliases.
+- Corrected the list of supported input formats to CSV, TSV, TXT, XLSX, XLSM,
+  and XLS, matching `load_table`.
+- Expanded the quickstart with a statement of what it achieves, a note that the
+  example datasets require cloning the repository, and links to the usage guide
+  and API reference.
+- Added a `to_lab_harmonized` example clarifying that it returns a
+  `HarmonizationResult` rather than a string.
+- Rewrote the README roadmap to reflect released versions and to state that
+  fingerprint and descriptor generation are out of scope.
+- `CONTRIBUTING.md`: pull requests now branch from and target `main` instead of
+  the closed `dev/v0.2.4` readiness branch.
+- `examples/fetch_pubchem.py` now emits the canonical `PubChem_CID` column
+  instead of the legacy `PubChem CID` name.
+
+### Removed
+- `environment.yml`. RDKit was declared both there and in `pyproject.toml`;
+  it is now declared once, and the contributor path is a single
+  `python -m pip install -e ".[dev]"` in any Python 3.11+ environment.
+- Obsolete "Future Releases (Planned)" section from this changelog, which
+  described v0.3.0 as upcoming after it had been released.
+
+### Internal
+- `version.py`: version bumped to `0.3.3`.
+- README project structure updated: 187 tests, `docs/` listed,
+  `environment.yml` removed.
+
+### Compatibility
+- Documentation and packaging only. No changes to the public API, the output
+  column contract, or harmonization behavior. Downstream consumers are
+  unaffected.
+
+---
+
 ## [0.3.2] - 2026-07-09
 
 ### Fixed
@@ -394,14 +440,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Future Releases (Planned)
-
-### [0.3.0] - ML-ready features
-- Standardized pipeline to generate ECFP fingerprints (with/without chirality).
-- InChI / InChIKey generation for deduplication and robust cross-database matching.
-
----
-
+[0.3.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.2.5...v0.3.0

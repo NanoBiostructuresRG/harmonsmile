@@ -1,7 +1,7 @@
 # HARMONSMILE: Harmonize SMILES Strings for Cheminformatics and Machine Learning
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.3.2-blue.svg)](https://pypi.org/project/harmonsmile/)
+[![Version](https://img.shields.io/badge/version-v0.3.3-blue.svg)](https://pypi.org/project/harmonsmile/)
 [![PyPI](https://img.shields.io/pypi/v/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Python](https://img.shields.io/pypi/pyversions/harmonsmile.svg)](https://pypi.org/project/harmonsmile/)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-teal.svg)](https://nanobiostructuresrg.github.io/harmonsmile/)
@@ -50,7 +50,6 @@ The platform enables:
   `InChI` and `InChIKey` to support comparison across PubChem, ChEMBL, and
   independent molecular databases.
 
-
 ---
 
 ## SMILES Column Contract
@@ -94,7 +93,7 @@ sources.
 
 ## Installation
 
-### For package users:
+### For package users
 
 Create and activate a Python environment:
 
@@ -109,53 +108,82 @@ Install **HARMONSMILE** from PyPI:
 pip install harmonsmile
 ```
 
+RDKit (`rdkit>=2022.09`) is a required runtime dependency and is installed
+automatically as part of the package dependencies.
 
-### For contributors/developers:
+### For contributors and developers
 
-Clone the repository:
+Clone the repository and install in editable mode with development
+dependencies:
 
 ```bash
 git clone https://github.com/NanoBiostructuresRG/harmonsmile.git
 cd harmonsmile
-```
-
-Create and activate the development environment:
-
-```bash
-conda env create -f environment.yml
+conda create -n harmonsmile_env python=3.11
 conda activate harmonsmile_env
+python -m pip install -e ".[dev]"
 ```
 
-Install HARMONSMILE in editable mode with development dependencies:
+To build the documentation locally, install the `docs` extra as well:
 
 ```bash
-python -m pip install -e .[dev]
+python -m pip install -e ".[dev,docs]"
+mkdocs serve
 ```
 
-> RDKit is a required runtime dependency (`rdkit>=2022.09`). For package users, it is declared in `pyproject.toml` and installed through the package dependency resolver. For contributors, `environment.yml` preinstalls RDKit from `conda-forge` for a stable local scientific stack.
 ---
 
 ## Quick Start
 
+This quickstart walks through the entry points of HARMONSMILE: standardizing a
+single SMILES string in memory, and running the three pipelines — two
+identifier-driven (PubChem, ChEMBL) and one for any table that already contains
+SMILES. Each pipeline reads an input table, resolves and harmonizes structures,
+and returns a `pandas.DataFrame` carrying the SMILES column contract described
+above.
+
+> **Example data.** The commands below use the datasets in `examples/`, which
+> ship with the repository but not with the PyPI wheel. To run them as written,
+> clone the repository and work from its root:
+>
+> ```bash
+> git clone https://github.com/NanoBiostructuresRG/harmonsmile.git
+> cd harmonsmile
+> ```
+>
+> To use your own data instead, point `input_path` at any CSV, TSV, TXT, XLSX,
+> XLSM, or XLS file with the columns listed under [Input Format](#input-format).
+
 ### Python API
 
-Standardize a single SMILES string:
+Standardize a single SMILES string, without any input file. The three methods
+show the difference between the compatibility layer and the harmonization
+layer:
 
 ```python
 from harmonsmile import RDKitStandardizer
 
 std = RDKitStandardizer()
-print(std.to_iso_kek("c1ccccc1"))    # canonical + isomeric + Kekulized
-print(std.to_conn_kek("c1ccccc1"))   # canonical + connectivity-only + Kekulized
+print(std.to_iso_kek("c1ccccc1"))    # 'C1=CC=CC=C1'  canonical + isomeric + Kekulized
+print(std.to_conn_kek("c1ccccc1"))   # 'C1=CC=CC=C1'  connectivity only, no stereochemistry
+
+result = std.to_lab_harmonized("c1ccccc1")
+print(result.value)                  # 'c1ccccc1'     lab-harmonized, aromatic
+print(result.status)                 # 'ok'
 ```
 
-Fetch properties from PubChem and harmonize:
+`to_lab_harmonized` returns a `HarmonizationResult` with `value`, `status`,
+`error`, and `warning` fields, rather than a bare string.
+
+Fetch properties from PubChem and harmonize. The input needs a CID column;
+`PubChem_CID` is canonical, and `PubChem CID`, `PubChemCID`, and `CID` are
+accepted as aliases:
 
 ```python
 from harmonsmile import PubChemIngest, PubChemConfig, save_table
 
 cfg = PubChemConfig(
-    input_path="examples/example_pubchem.csv",   # requires: id, PubChem CID
+    input_path="examples/example_pubchem.csv",   # columns: id, PubChem_CID
 )
 df = PubChemIngest(cfg).run()
 save_table(df, "results/example_pubchem_harmonized.csv")
@@ -167,42 +195,55 @@ Fetch properties from ChEMBL and harmonize:
 from harmonsmile import ChEMBLIngest, ChEMBLConfig, save_table
 
 cfg = ChEMBLConfig(
-    input_path="examples/example_chembl.csv",    # requires: id, ChEMBL ID
+    input_path="examples/example_chembl.csv",    # columns: id, ChEMBL ID
 )
 df = ChEMBLIngest(cfg).run()
 save_table(df, "results/example_chembl_harmonized.csv")
 ```
 
-Harmonize any file with a SMILES column (COCONUT, in-house, etc.):
+Harmonize any table that already contains SMILES (COCONUT, in-house, etc.).
+The example file is tab-delimited, and the SMILES column may carry any name:
 
 ```python
 from harmonsmile import SMILESPrep, SMILESConfig, save_table
 
 cfg = SMILESConfig(
-    input_path="examples/example_smiles.csv",
-    smiles_col="SMILES",                      # any column name
+    input_path="examples/example_smiles.txt",    # columns: id, name, SMILES
+    smiles_col="SMILES",
 )
 df = SMILESPrep(cfg).run()
 save_table(df, "results/example_smiles_harmonized.csv")
 ```
 
+Pipeline `.run()` methods return a DataFrame and never write to disk.
+Persistence is explicit through `save_table(df, path)`, which always writes CSV.
+
 ### Command-Line Interface
 
+The CLI covers the same pipelines and writes output files directly:
+
 ```bash
-# PubChem pipeline
-harmonsmile --pubchem-in examples/database1.csv --pubchem-out results/database1_harmonized.csv
+# PubChem batch
+harmonsmile --pubchem-in  examples/example_pubchem.csv \
+            --pubchem-out results/example_pubchem_harmonized.csv
 
-# SMILES pipeline (COCONUT, independent, etc.)
-harmonsmile --smiles-in examples/database2.csv --smiles-col canonical_smiles \
-            --smiles-out results/database2_harmonized.csv
+# ChEMBL batch
+harmonsmile --chembl-in  examples/example_chembl.csv \
+            --chembl-out results/example_chembl_harmonized.csv
 
-# Both pipelines in one run
+# SMILES batch (COCONUT, in-house, etc.)
+harmonsmile --smiles-in  examples/example_smiles.txt --smiles-col SMILES \
+            --smiles-out results/example_smiles_harmonized.csv
+
+# Several pipelines in one call
 harmonsmile \
-  --pubchem-in examples/database1.csv --pubchem-out results/database1_harmonized.csv \
-  --smiles-in  examples/database2.csv --smiles-col  canonical_smiles \
-  --smiles-out results/database2_harmonized.csv
+  --pubchem-in  examples/example_pubchem.csv \
+  --pubchem-out results/example_pubchem_harmonized.csv \
+  --smiles-in   examples/example_smiles.txt --smiles-col SMILES \
+  --smiles-out  results/example_smiles_harmonized.csv
 
-# Single Entry - fetch one compound by ID
+# Single entry - fetch and harmonize one compound by identifier
+# Output is written to results/ automatically
 harmonsmile --pubchem-cid 2723949
 harmonsmile --chembl-id CHEMBL294199
 
@@ -210,11 +251,35 @@ harmonsmile --chembl-id CHEMBL294199
 harmonsmile --version
 ```
 
-Also available as a Python module:
+When the identifier column carries a non-standard name, declare it explicitly:
 
 ```bash
-python -m harmonsmile --pubchem-in examples/database1.csv --pubchem-out results/out.csv
+harmonsmile --pubchem-in  data/my_table.csv --pubchem-cidcol "compound_cid" \
+            --pubchem-out results/out.csv
+
+harmonsmile --chembl-in  data/my_table.csv --chembl-idcol "chembl_identifier" \
+            --chembl-out results/out.csv
 ```
+
+Also available as a module:
+
+```bash
+python -m harmonsmile --pubchem-in  examples/example_pubchem.csv \
+                      --pubchem-out results/out.csv
+```
+
+Run `harmonsmile --help` for the full argument reference.
+
+### Next steps
+
+- [SMILES Column Contract](#smiles-column-contract) — what each output column
+  means and how to filter rows on harmonization status.
+- [Usage guide](https://nanobiostructuresrg.github.io/harmonsmile/usage/) —
+  longer worked examples.
+- [API reference](https://nanobiostructuresrg.github.io/harmonsmile/api/) —
+  full signatures for every public class and function.
+- `examples/fetch_pubchem.py` and `examples/fetch_chembl.py` — build larger
+  input tables from a free-text query before running a pipeline.
 
 ---
 
@@ -222,35 +287,49 @@ python -m harmonsmile --pubchem-in examples/database1.csv --pubchem-out results/
 
 | Pipeline | Config | Source | Input | API |
 |---|---|---|---|---|
-| `PubChemIngest` | `PubChemConfig` | PubChem | CSV with `PubChem CID` column | REST (public) |
-| `ChEMBLIngest` | `ChEMBLConfig` | ChEMBL | CSV with `ChEMBL ID` column | REST (public) |
-| `SMILESPrep` | `SMILESConfig` | Any | CSV/Excel with any SMILES column | Local file |
+| `PubChemIngest` | `PubChemConfig` | PubChem | Table with a `PubChem_CID` column | REST (public) |
+| `ChEMBLIngest` | `ChEMBLConfig` | ChEMBL | Table with a `ChEMBL ID` column | REST (public) |
+| `SMILESPrep` | `SMILESConfig` | Any | Table with any SMILES column | Local file |
 
 All pipelines preserve the source `SMILES`, append `SMILES_RDKit`, and append
 the lab harmonization columns `SMILES_Harmonized`,
 `SMILES_Harmonization_Status`, and `SMILES_Harmonization_Message`.
 Pipeline `.run()` methods return a `pandas.DataFrame` and do not write files.
-Use `save_table(df, path)` to persist results from Python, or use the CLI
+Use `save_table(df, path)` to persist results from Python, or the CLI
 `--*-out` options.
 
 ---
 
 ## Input Format
 
-| Pipeline | Required columns |
-|---|---|
-| `PubChemIngest` | `id` (optional), `PubChem CID` |
-| `ChEMBLIngest` | `id` (optional), `ChEMBL ID` |
-| `SMILESPrep` | `id` (optional), `<smiles_col>` (any name) |
+| Pipeline | Required columns | Column option |
+|---|---|---|
+| `PubChemIngest` | `id` (optional), `PubChem_CID` | `cid_col` / `--pubchem-cidcol` |
+| `ChEMBLIngest` | `id` (optional), `ChEMBL ID` | `chembl_id_col` / `--chembl-idcol` |
+| `SMILESPrep` | `id` (optional), `<smiles_col>` (any name) | `smiles_col` / `--smiles-col` |
 
-Supported file formats: CSV, TSV, XLSX, XLS.
+`PubChemIngest` accepts `PubChem_CID` (canonical), `PubChem CID`, `PubChemCID`,
+and `CID` as input aliases, and always emits `PubChem_CID` in the output.
+
+Supported file formats: CSV, TSV, TXT, XLSX, XLSM, XLS. `.csv` is read as
+comma-delimited and `.tsv` / `.txt` as tab-delimited, deterministically and
+without delimiter sniffing.
 
 ---
 
 ## Roadmap
 
-- **v0.3.0** - Lab-harmonized SMILES contract/layer for database
-  harmonization, deduplication, and cross-source matching.
+Released:
+
+- **v0.2.x** — RDKit canonicalization contract (`SMILES_RDKit`), DataFrame-only
+  pipeline returns with `save_table` as the single write boundary.
+- **v0.3.x** — RDKit-native lab harmonization layer (`SMILES_Harmonized`) with
+  auditable per-row status reporting, and deterministic alias-aware PubChem CID
+  handling emitting a canonical `PubChem_CID` column.
+
+Deliberately out of scope: molecular fingerprint generation and descriptor
+calculation, which are handled downstream rather than inside HARMONSMILE.
+HARMONSMILE stops at the harmonized structure table.
 
 ---
 
@@ -266,15 +345,15 @@ HARMONSMILE/
 |   |-- _cli.py            # CLI implementation
 |   |-- chembl.py          # ChEMBL REST client
 |   |-- config.py          # PubChemConfig, ChEMBLConfig, SMILESConfig dataclasses
-|   |-- io.py              # Table I/O utilities
+|   |-- io.py              # Table I/O utilities (load_table, save_table)
 |   |-- pipelines.py       # PubChemIngest, ChEMBLIngest, SMILESPrep
 |   |-- pubchem.py         # PubChem REST client
-|   |-- standardize.py     # RDKitStandardizer
+|   |-- standardize.py     # RDKitStandardizer, HarmonizationResult
 |   `-- version.py         # Package version metadata
-|-- tests/                 # Unit test suite (pytest) - 146 tests
-|-- examples/              # Example scripts and datasets
+|-- tests/                 # Unit test suite (pytest) - 187 tests
+|-- examples/              # Example datasets and fetch scripts
+|-- docs/                  # MkDocs sources (index, usage, api, changelog)
 |-- pyproject.toml
-|-- environment.yml
 |-- mkdocs.yml
 |-- requirements-dev.txt
 |-- CHANGELOG.md
@@ -295,11 +374,12 @@ python -m pytest tests -p no:cacheprovider --basetemp .pytest_tmp
 
 ### Contributing
 
-Contributions are welcome. Please open an issue before submitting a pull request.
-Follow the existing code style: NumPy-style docstrings, type hints, and SPDX license
-headers in all source files.
+Contributions are welcome. Please open an issue before submitting a pull
+request. Follow the existing code style: NumPy-style docstrings, type hints,
+and SPDX license headers in all source files.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines, including the
+development setup and the pull request target branch.
 Please also read our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
@@ -319,7 +399,7 @@ Cheminformatics and Machine Learning. Zenodo. https://doi.org/10.5281/zenodo.202
 ## Author
 
 Developed by **Flavio F. Contreras-Torres** (Tecnologico de Monterrey)
-Monterrey, Mexico - May 2026
+Monterrey, Mexico
 
 ---
 
