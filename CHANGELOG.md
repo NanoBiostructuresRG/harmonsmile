@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.4] - 2026-09-24
+
+### Added
+- Added row-level PubChem acquisition provenance through
+  `PubChem_Acquisition_Status` and `PubChem_Acquisition_Message`.
+- Added explicit acquisition states `ok`, `failed`, and `not_attempted`,
+  independently of molecular harmonization outcome.
+
+### Fixed
+- Distinguished an exhausted PubChem acquisition from a successful acquisition
+  in which an individual requested property is absent or null.
+- Prevented PubChem acquisition failures from being represented only through
+  null molecular properties and downstream harmonization failure.
+
+### Preserved
+- Preserved the existing PubChem retry count, timeout, backoff, and request
+  pacing behavior.
+- Preserved existing molecular harmonization behavior and status semantics.
+- Preserved input rows when PubChem acquisition or molecular harmonization
+  does not succeed.
+
+---
 ## [0.3.3] - 2026-08-15
 
 ### Added
@@ -465,6 +487,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.3.4]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/NanoBiostructuresRG/harmonsmile/compare/v0.3.0...v0.3.1

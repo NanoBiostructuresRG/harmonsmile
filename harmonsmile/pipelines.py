@@ -119,9 +119,12 @@ class PubChemIngest:
     """
     Pipeline for ingesting and harmonizing PubChem compound data.
 
-    Fetches properties from the PubChem REST API and appends SMILES_RDKit
-    plus lab harmonization value/status/error columns. PubChem-provided
-    ConnectivitySMILES is preserved when available.
+    Fetches properties from the PubChem REST API and reports row-level acquisition
+    outcome through ``PubChem_Acquisition_Status``, with optional diagnostics in
+    ``PubChem_Acquisition_Message``. Acquisition provenance is reported
+    independently of molecular harmonization. The pipeline also appends
+    ``SMILES_RDKit`` and the lab harmonization value/status/message columns.
+    PubChem-provided ``ConnectivitySMILES`` is preserved when available.
 
     Parameters
     ----------

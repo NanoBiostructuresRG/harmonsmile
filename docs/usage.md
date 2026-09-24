@@ -214,6 +214,33 @@ Pipeline `.run()` methods return a `pandas.DataFrame` and do not write files.
 Use `save_table(df, path)` from Python, or the CLI `--*-out` options, to
 persist results.
 
+## PubChem Acquisition Provenance
+
+`PubChemIngest` reports PubChem acquisition outcome independently of molecular
+harmonization.
+
+| Acquisition status | Meaning |
+|---|---|
+| `ok` | A usable PubChem property row was obtained. Individual requested properties may still be absent or null. |
+| `failed` | No usable PubChem property row was obtained within the configured acquisition attempt budget for that invocation. |
+| `not_attempted` | No PubChem HTTP acquisition was attempted because the local CID was missing or invalid after local handling. |
+
+The machine-readable field is `PubChem_Acquisition_Status`.
+`PubChem_Acquisition_Message` provides an optional diagnostic message and
+should not be used as the programmatic decision key.
+
+Acquisition and harmonization represent different stages. For example, the
+following combination is valid:
+
+```text
+PubChem_Acquisition_Status = ok
+SMILES_Harmonization_Status = failed
+```
+
+This means that a usable PubChem property row was acquired, but the returned
+SMILES was absent or could not be harmonized. A harmonization failure therefore
+does not imply an acquisition failure.
+
 ## Input Format
 
 | Pipeline | Required columns | Column option |
