@@ -16,6 +16,7 @@ from harmonsmile import (
     SMILESConfig,
 )
 from harmonsmile.pipelines import ChEMBLIngest, PubChemIngest, SMILESPrep
+from harmonsmile.pubchem import _PubChemFetchResult
 
 
 def _write_csv(content: str) -> str:
@@ -35,15 +36,27 @@ def _empty_csv(columns: list[str]) -> str:
 def _std() -> MagicMock:
     std = MagicMock(spec=["to_iso_kek", "to_lab_harmonized"])
     std.to_iso_kek = lambda smiles: f"rdkit:{smiles}" if pd.notna(smiles) else None
-    std.to_lab_harmonized = lambda smiles: (
-        HarmonizationResult(f"harmonized:{smiles}", "ok", None, None)
-        if pd.notna(smiles) and smiles == "CCO"
-        else HarmonizationResult(None, "failed", "invalid SMILES", None)
-    )
+
+    def to_lab_harmonized(smiles):
+        if not isinstance(smiles, str) or not smiles.strip():
+            return HarmonizationResult(None, "failed", "missing or blank SMILES", None)
+        if smiles == "CCO":
+            return HarmonizationResult(f"harmonized:{smiles}", "ok", None, None)
+        return HarmonizationResult(None, "failed", "invalid SMILES", None)
+
+    std.to_lab_harmonized = to_lab_harmonized
     return std
 
 
-class _StaticClient:
+class _StaticPubChemClient:
+    def __init__(self, props: dict):
+        self.result = _PubChemFetchResult(props, "ok", None)
+
+    def fetch_props(self, *_args):
+        return self.result
+
+
+class _StaticChEMBLClient:
     def __init__(self, props: dict):
         self.props = props
 
@@ -68,12 +81,13 @@ class TestPubChemIngest:
     def test_missing_smiles_column_emits_warning(self, caplog):
         path = _write_csv("id,PubChem_CID\n1,702\n")
         cfg = PubChemConfig(input_path=path, props=("MolecularWeight",))
-        mock_client = _StaticClient({"MolecularWeight": "46.07"})
+        mock_client = _StaticPubChemClient({"MolecularWeight": "46.07"})
 
         try:
             with caplog.at_level(logging.WARNING, logger="harmonsmile.pipelines"):
                 out = PubChemIngest(cfg, client=mock_client, std=_std()).run()
             assert isinstance(out, pd.DataFrame)
+            assert out.loc[0, "PubChem_Acquisition_Status"] == "ok"
             assert any("SMILES" in msg for msg in caplog.messages)
         finally:
             os.unlink(path)
@@ -81,7 +95,7 @@ class TestPubChemIngest:
     def test_run_returns_dataframe_and_does_not_create_output(self):
         path = _write_csv("id,PubChem_CID\n1,702\n")
         out_path = path.replace(".csv", "_out.csv")
-        mock_client = _StaticClient({
+        mock_client = _StaticPubChemClient({
             "SMILES": "CCO",
             "MolecularWeight": "46.07",
         })
@@ -98,7 +112,7 @@ class TestPubChemIngest:
 
     def test_strict_schema_by_default(self):
         path = _write_csv("id,PubChem_CID,source_note\n1,702,keep me only if asked\n")
-        mock_client = _StaticClient({
+        mock_client = _StaticPubChemClient({
             "SMILES": "CCO",
             "ConnectivitySMILES": "CCO",
             "MolecularFormula": "C2H6O",
@@ -120,7 +134,9 @@ class TestPubChemIngest:
                 std=_std(),
             ).run()
             assert list(out.columns) == [
-                "id", "PubChem_CID", "InChI", "InChIKey",
+                "id", "PubChem_CID",
+                "PubChem_Acquisition_Status", "PubChem_Acquisition_Message",
+                "InChI", "InChIKey",
                 "SMILES", "ConnectivitySMILES",
                 "SMILES_RDKit",
                 "SMILES_Harmonized", "SMILES_Harmonization_Status",
@@ -130,6 +146,8 @@ class TestPubChemIngest:
                 "RotatableBondCount", "HeavyAtomCount",
             ]
             assert "SMILES_Harmonization_Error" not in out.columns
+            assert out.loc[0, "PubChem_Acquisition_Status"] == "ok"
+            assert pd.isna(out.loc[0, "PubChem_Acquisition_Message"])
             assert out.loc[0, "SMILES_RDKit"] == "rdkit:CCO"
             assert out.loc[0, "ConnectivitySMILES"] == "CCO"
             assert out.loc[0, "SMILES_Harmonized"] == "harmonized:CCO"
@@ -144,7 +162,7 @@ class TestPubChemIngest:
 
     def test_keep_extra_columns_preserves_metadata_but_not_index_artifacts(self):
         path = _write_csv("Unnamed: 0,id,PubChem_CID,source_note\n0,1,702,metadata\n")
-        mock_client = _StaticClient({"SMILES": "CCO"})
+        mock_client = _StaticPubChemClient({"SMILES": "CCO"})
         try:
             out = PubChemIngest(
                 PubChemConfig(input_path=path, keep_extra_columns=True),
@@ -154,6 +172,113 @@ class TestPubChemIngest:
             assert "source_note" in out.columns
             assert out.columns[-1] == "source_note"
             assert "Unnamed: 0" not in out.columns
+            assert list(out.columns[:4]) == [
+                "id",
+                "PubChem_CID",
+                "PubChem_Acquisition_Status",
+                "PubChem_Acquisition_Message",
+            ]
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.parametrize("keep_extra_columns", [False, True])
+    def test_stale_acquisition_columns_are_replaced(self, keep_extra_columns):
+        path = _write_csv(
+            "id,PubChem_CID,PubChem_Acquisition_Status,"
+            "PubChem_Acquisition_Message,source_note\n"
+            "1,702,stale,old diagnostic,preserve me\n"
+        )
+        mock_client = _StaticPubChemClient({"SMILES": "CCO"})
+
+        try:
+            out = PubChemIngest(
+                PubChemConfig(
+                    input_path=path,
+                    keep_extra_columns=keep_extra_columns,
+                ),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert out.columns.tolist().count("PubChem_Acquisition_Status") == 1
+            assert out.columns.tolist().count("PubChem_Acquisition_Message") == 1
+            assert out.loc[0, "PubChem_Acquisition_Status"] == "ok"
+            assert pd.isna(out.loc[0, "PubChem_Acquisition_Message"])
+            assert ("source_note" in out.columns) is keep_extra_columns
+            if keep_extra_columns:
+                assert out.loc[0, "source_note"] == "preserve me"
+        finally:
+            os.unlink(path)
+
+    def test_mixed_cid_acquisition_failure_is_isolated(self):
+        path = _write_csv("id,PubChem_CID\n1,701\n2,702\n3,703\n")
+        mock_client = MagicMock()
+        mock_client.fetch_props.side_effect = [
+            _PubChemFetchResult({"SMILES": "CCO"}, "ok", None),
+            _PubChemFetchResult(
+                {"SMILES": None},
+                "failed",
+                "PubChem acquisition failed: Exception: timeout",
+            ),
+            _PubChemFetchResult({"SMILES": "CCO"}, "ok", None),
+        ]
+
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert len(out) == 3
+            assert out["PubChem_Acquisition_Status"].tolist() == ["ok", "failed", "ok"]
+            assert [call.args[0] for call in mock_client.fetch_props.call_args_list] == [
+                "701",
+                "702",
+                "703",
+            ]
+        finally:
+            os.unlink(path)
+
+    def test_acquisition_failure_is_distinct_from_absent_smiles_property(self):
+        path = _write_csv("id,PubChem_CID\n1,701\n2,702\n")
+        mock_client = MagicMock()
+        mock_client.fetch_props.side_effect = [
+            _PubChemFetchResult(
+                {"SMILES": None},
+                "failed",
+                "PubChem acquisition failed: Exception: timeout",
+            ),
+            _PubChemFetchResult({"SMILES": None}, "ok", None),
+        ]
+
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert out["SMILES"].isna().tolist() == [True, True]
+            assert out["SMILES_Harmonization_Status"].tolist() == ["failed", "failed"]
+            assert out["SMILES_Harmonization_Message"].tolist() == [
+                "missing or blank SMILES",
+                "missing or blank SMILES",
+            ]
+            assert out["PubChem_Acquisition_Status"].tolist() == ["failed", "ok"]
+        finally:
+            os.unlink(path)
+
+    def test_molecular_failure_is_independent_of_successful_acquisition(self):
+        path = _write_csv("id,PubChem_CID\n1,702\n")
+        mock_client = _StaticPubChemClient({"SMILES": "invalid"})
+
+        try:
+            out = PubChemIngest(
+                PubChemConfig(input_path=path),
+                client=mock_client,
+                std=_std(),
+            ).run()
+            assert out.loc[0, "PubChem_Acquisition_Status"] == "ok"
+            assert out.loc[0, "SMILES_Harmonization_Status"] == "failed"
+            assert out.loc[0, "SMILES_Harmonization_Message"] == "invalid SMILES"
         finally:
             os.unlink(path)
 
@@ -163,7 +288,7 @@ class TestPubChemIngest:
     )
     def test_pubchem_cid_input_aliases_are_accepted(self, column):
         path = _write_csv(f"id,{column}\n1,702\n")
-        mock_client = _StaticClient({"SMILES": "CCO"})
+        mock_client = _StaticPubChemClient({"SMILES": "CCO"})
         try:
             out = PubChemIngest(
                 PubChemConfig(input_path=path),
@@ -178,7 +303,7 @@ class TestPubChemIngest:
 
     def test_requested_cid_column_uses_exact_match_first(self):
         path = _write_csv("id,CID,source\n1,702,999\n")
-        mock_client = _StaticClient({"SMILES": "CCO"})
+        mock_client = _StaticPubChemClient({"SMILES": "CCO"})
         try:
             out = PubChemIngest(
                 PubChemConfig(input_path=path, cid_col="CID"),
@@ -191,7 +316,7 @@ class TestPubChemIngest:
 
     def test_requested_cid_column_uses_normalized_alias_match(self):
         path = _write_csv("id,PubChem_CID\n1,702\n")
-        mock_client = _StaticClient({"SMILES": "CCO"})
+        mock_client = _StaticPubChemClient({"SMILES": "CCO"})
         try:
             out = PubChemIngest(
                 PubChemConfig(input_path=path, cid_col="pubchem cid"),
@@ -204,7 +329,7 @@ class TestPubChemIngest:
 
     def test_requested_cid_column_uses_normalized_non_alias_match(self):
         path = _write_csv("id,My CID\n1,702\n")
-        mock_client = _StaticClient({"SMILES": "CCO"})
+        mock_client = _StaticPubChemClient({"SMILES": "CCO"})
         try:
             out = PubChemIngest(
                 PubChemConfig(input_path=path, cid_col="my-cid"),
@@ -259,7 +384,7 @@ class TestChEMBLIngest:
     def test_strict_schema_and_no_file_write(self):
         path = _write_csv("id,ChEMBL ID,source_note\n1,CHEMBL1,metadata\n")
         out_path = path.replace(".csv", "_out.csv")
-        mock_client = _StaticClient({
+        mock_client = _StaticChEMBLClient({
             "pref_name": "Ethanol",
             "canonical_smiles": "CCO",
             "full_mwt": "46.07",
@@ -286,7 +411,7 @@ class TestChEMBLIngest:
 
     def test_keep_extra_columns_preserves_metadata_but_not_index_artifacts(self):
         path = _write_csv("Unnamed_0,id,ChEMBL ID,source_note\n0,1,CHEMBL1,metadata\n")
-        mock_client = _StaticClient({"canonical_smiles": "CCO"})
+        mock_client = _StaticChEMBLClient({"canonical_smiles": "CCO"})
         try:
             out = ChEMBLIngest(
                 ChEMBLConfig(input_path=path, keep_extra_columns=True),

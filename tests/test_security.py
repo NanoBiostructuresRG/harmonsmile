@@ -129,14 +129,16 @@ class TestPubChemClientSecurity:
         called_url = mock_get.call_args[0][0]
         assert "/123/" in called_url
         assert "fake" not in called_url
-        assert result == {"SMILES": "CCO"}
+        assert result.status == "ok"
+        assert result.properties == {"SMILES": "CCO"}
         client.close()
 
     def test_fully_non_numeric_cid_returns_none(self):
         """CID with no digits returns None values without network call."""
         client = _PubChemClient()
         result = client.fetch_props("../../etc/passwd", ["SMILES"])
-        assert result == {"SMILES": None}
+        assert result.status == "not_attempted"
+        assert result.properties == {"SMILES": None}
         client.close()
 
     def test_valid_bounds_accepted(self):

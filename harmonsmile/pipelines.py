@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 
 PUBCHEM_CID_COLUMN = "PubChem_CID"
 _PUBCHEM_CID_ALIAS_KEYS = frozenset({"pubchemcid", "cid"})
+_PUBCHEM_ACQUISITION_COLUMNS = [
+    "PubChem_Acquisition_Status",
+    "PubChem_Acquisition_Message",
+]
 _HARMONIZATION_COLUMNS = [
     "SMILES_Harmonized",
     "SMILES_Harmonization_Status",
@@ -115,9 +119,12 @@ class PubChemIngest:
     """
     Pipeline for ingesting and harmonizing PubChem compound data.
 
-    Fetches properties from the PubChem REST API and appends SMILES_RDKit
-    plus lab harmonization value/status/error columns. PubChem-provided
-    ConnectivitySMILES is preserved when available.
+    Fetches properties from the PubChem REST API and reports row-level acquisition
+    outcome through ``PubChem_Acquisition_Status``, with optional diagnostics in
+    ``PubChem_Acquisition_Message``. Acquisition provenance is reported
+    independently of molecular harmonization. The pipeline also appends
+    ``SMILES_RDKit`` and the lab harmonization value/status/message columns.
+    PubChem-provided ``ConnectivitySMILES`` is preserved when available.
 
     Parameters
     ----------
@@ -179,12 +186,21 @@ class PubChemIngest:
                 df = df.drop(columns=[PUBCHEM_CID_COLUMN])
             df = df.rename(columns={cid_col: PUBCHEM_CID_COLUMN})
         df[PUBCHEM_CID_COLUMN] = df[PUBCHEM_CID_COLUMN].apply(_sanitize_cid)
+        df = df.drop(columns=_PUBCHEM_ACQUISITION_COLUMNS, errors="ignore")
 
-        props = df[PUBCHEM_CID_COLUMN].apply(
+        fetch_results = df[PUBCHEM_CID_COLUMN].apply(
             lambda c: self.client.fetch_props(c, list(self.cfg.props))
         )
-        props_df = pd.DataFrame(list(props))
-        out = pd.concat([df, props_df], axis=1)
+        acquisition_df = pd.DataFrame({
+            "PubChem_Acquisition_Status": fetch_results.apply(
+                lambda result: result.status
+            ),
+            "PubChem_Acquisition_Message": fetch_results.apply(
+                lambda result: result.message
+            ),
+        })
+        props_df = pd.DataFrame([result.properties for result in fetch_results])
+        out = pd.concat([df, acquisition_df, props_df], axis=1)
 
         # SMILES_RDKit preserves the v0.2.5 RDKit canonicalization contract.
         if "SMILES" in out.columns:
@@ -203,6 +219,7 @@ class PubChemIngest:
         desired = [
             "id",
             PUBCHEM_CID_COLUMN,
+            *_PUBCHEM_ACQUISITION_COLUMNS,
             "InChI",
             "InChIKey",
             "SMILES",
