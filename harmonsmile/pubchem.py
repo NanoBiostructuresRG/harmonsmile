@@ -11,9 +11,19 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, Literal
 
 import requests
+
+
+@dataclass(frozen=True)
+class _PubChemFetchResult:
+    """Internal result preserving PubChem acquisition provenance."""
+
+    properties: dict[str, Any]
+    status: Literal["ok", "failed", "not_attempted"]
+    message: str | None
 
 
 class _PubChemClient:
@@ -55,7 +65,7 @@ class _PubChemClient:
         self._session = requests.Session()
         self._session.headers.update({"User-Agent": "harmonsmile (python-requests)"})
 
-    def fetch_props(self, cid: str | None, props: list[str]) -> dict[str, Any]:
+    def fetch_props(self, cid: str | None, props: list[str]) -> _PubChemFetchResult:
         """
         Fetch compound properties from PubChem by CID.
 
@@ -68,24 +78,34 @@ class _PubChemClient:
 
         Returns
         -------
-        dict[str, Any]
-            Dictionary mapping property names to their values.
-            Values are None if the fetch failed or CID is empty.
+        _PubChemFetchResult
+            Acquisition result containing requested properties, a machine-readable
+            status, and an optional diagnostic message.
 
         Examples
         --------
         >>> client = _PubChemClient()
-        >>> client.fetch_props("2723949", ["SMILES", "MolecularWeight"])  # doctest: +SKIP
-        {'SMILES': 'CC(=S)N', 'MolecularWeight': '74.15'}
-        >>> client.fetch_props("", ["SMILES"])
-        {'SMILES': None}
+        >>> result = client.fetch_props("2723949", ["SMILES"])  # doctest: +SKIP
+        >>> result.status
+        'ok'
+        >>> client.fetch_props("", ["SMILES"]).status
+        'not_attempted'
         >>> client.close()
         """
+        empty_properties = {p: None for p in props}
         if not cid:
-            return {p: None for p in props}
+            return _PubChemFetchResult(
+                properties=empty_properties,
+                status="not_attempted",
+                message="PubChem acquisition not attempted: missing or invalid CID",
+            )
         cid = "".join(ch for ch in str(cid) if ch.isdigit())
         if not cid:
-            return {p: None for p in props}
+            return _PubChemFetchResult(
+                properties=empty_properties,
+                status="not_attempted",
+                message="PubChem acquisition not attempted: missing or invalid CID",
+            )
         base = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid"
         url = f"{base}/{cid}/property/{','.join(props)}/JSON"
         for k in range(self.retries):
@@ -94,13 +114,27 @@ class _PubChemClient:
                 r.raise_for_status()
                 row = r.json()["PropertyTable"]["Properties"][0]
                 time.sleep(self.sleep)
-                return {p: row.get(p) for p in props}
+                return _PubChemFetchResult(
+                    properties={p: row.get(p) for p in props},
+                    status="ok",
+                    message=None,
+                )
             except Exception as e:
                 if k + 1 == self.retries:
                     self.log(f"[PubChem] CID {cid}: {e}")
-                    return {p: None for p in props}
+                    detail = str(e).strip()
+                    diagnostic = f"{type(e).__name__}: {detail}" if detail else type(e).__name__
+                    return _PubChemFetchResult(
+                        properties=empty_properties,
+                        status="failed",
+                        message=f"PubChem acquisition failed: {diagnostic}",
+                    )
                 time.sleep(self.sleep * (2 ** k))
-        return {p: None for p in props}
+        return _PubChemFetchResult(
+            properties=empty_properties,
+            status="failed",
+            message="PubChem acquisition failed: attempt budget exhausted",
+        )
 
     def __enter__(self) -> _PubChemClient:
         """
